@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Satzbausatz</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --chip-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .instruction { margin-bottom: 20px; color: #7f8c8d; font-size: 1rem; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Zielfläche für Wörter */
+        .drop-zone {
+            min-height: 80px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            background-color: #fafafa;
+            transition: border-color 0.3s;
+        }
+
+        .drop-zone.correct { border-color: var(--correct-color); background-color: #f0fff4; }
+        .drop-zone.incorrect { border-color: var(--incorrect-color); background-color: #fff5f5; }
+
+        /* Wort-Pool */
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+            padding: 10px;
+        }
+
+        .word-chip {
+            padding: 12px 18px;
+            background: var(--chip-bg);
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            user-select: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .word-chip:hover { border-color: var(--secondary-color); transform: translateY(-2px); }
+        .word-chip.used { opacity: 0.3; pointer-events: none; transform: none; }
+
+        #feedback {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+            transition: color 0.3s;
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.3s;
+        }
+
+        .btn-reset { background: var(--primary-color); color: white; }
+        .btn-next { background: var(--secondary-color); color: white; display: none; }
+
+        @media (max-width: 500px) {
+            .word-chip { padding: 10px 14px; font-size: 1rem; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Satzbausatz</h1>
+        <p class="instruction">Klicke die Wörter an, um den richtigen russischen Satz zu bauen.</p>
+
+        <div class="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+
+        <div id="target-zone" class="drop-zone"></div>
+        
+        <div id="pool-zone" class="word-pool"></div>
+
+        <div id="feedback"></div>
+
+        <div class="controls">
+            <button class="btn-reset" onclick="resetCurrentSentence()">Satz leeren</button>
+            <button id="next-btn" class="btn-next" onclick="loadNextSentence()">Nächster Satz</button>
+        </div>
+    </div>
+
+    <script>
+        const taskData = [
+            { 
+                sentence: ["Он", "изъявил", "желание", "помочь"], 
+                meaning: "Er äußerte den Wunsch zu helfen." 
+            },
+            { 
+                sentence: ["Нужно", "предъявить", "паспорт", "на", "почте"], 
+                meaning: "Man muss den Pass bei der Post vorzeigen." 
+            },
+            { 
+                sentence: ["Директор", "изъявил", "готовность", "к", "переговорам"], 
+                meaning: "Der Direktor bekundete Bereitschaft zu Verhandlungen." 
+            },
+            { 
+                sentence: ["Вам", "предъявили", "счёт", "за", "лечение"], 
+                meaning: "Ihnen wurde die Rechnung für die Behandlung präsentiert." 
+            },
+            { 
+                sentence: ["Охранник", "попросил", "предъявить", "пропуск"], 
+                meaning: "Der Wachmann bat darum, den Ausweis vorzuzeigen." 
+            },
+            { 
+                sentence: ["Они", "изъявили", "согласие", "на", "условия"], 
+                meaning: "Sie erklärten ihre Zustimmung zu den Bedingungen." 
+            }
+        ];
+
+        let currentIndex = 0;
+        let userSentence = [];
+
+        function init() {
+            loadSentence();
+        }
+
+        function loadSentence() {
+            const data = taskData[currentIndex];
+            userSentence = [];
+            
+            const poolZone = document.getElementById('pool-zone');
+            const targetZone = document.getElementById('target-zone');
+            const feedback = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+            
+            feedback.textContent = "";
+            feedback.style.color = "inherit";
+            targetZone.innerHTML = "";
+            targetZone.className = "drop-zone";
+            nextBtn.style.display = "none";
+
+            // Fortschrittsbalken
+            document.getElementById('progress-fill').style.width = (currentIndex / taskData.length * 100) + "%";
+
+            // Wörter mischen
+            const shuffledWords = [...data.sentence].sort(() => Math.random() - 0.5);
+            
+            poolZone.innerHTML = "";
+            shuffledWords.forEach((word, index) => {
+                const chip = document.createElement('div');
+                chip.className = 'word-chip';
+                chip.textContent = word;
+                chip.onclick = () => handleWordClick(chip, word);
+                poolZone.appendChild(chip);
+            });
+        }
+
+        function handleWordClick(chip, word) {
+            const targetZone = document.getElementById('target-zone');
+            const feedback = document.getElementById('feedback');
+            const currentTask = taskData[currentIndex];
+
+            // Wort hinzufügen
+            userSentence.push(word);
+            chip.classList.add('used');
+
+            // Visuell in die Zielzone
+            const newChip = document.createElement('div');
+            newChip.className = 'word-chip';
+            newChip.textContent = word;
+            targetZone.appendChild(newChip);
+
+            // Direktes Feedback nach jedem Wort
+            checkStep();
+        }
+
+        function checkStep() {
+            const targetZone = document.getElementById('target-zone');
+            const feedback = document.getElementById('feedback');
+            const currentTask = taskData[currentIndex];
+
+            // Prüfen, ob die bisherige Reihenfolge korrekt ist
+            const isCorrectSoFar = userSentence.every((word, i) => word === currentTask.sentence[i]);
+
+            if (!isCorrectSoFar) {
+                targetZone.classList.add('incorrect');
+                feedback.textContent = "Das ist nicht die richtige Reihenfolge. Probiere es noch einmal!";
+                feedback.style.color = "var(--incorrect-color)";
+                setTimeout(resetCurrentSentence, 1500); // Automatischer Reset bei Fehler
+            } else {
+                targetZone.classList.remove('incorrect');
+                feedback.textContent = "Gut so...";
+                feedback.style.color = "var(--secondary-color)";
+
+                // Wenn fertig
+                if (userSentence.length === currentTask.sentence.length) {
+                    targetZone.classList.add('correct');
+                    feedback.textContent = "Richtig! – " + currentTask.meaning;
+                    feedback.style.color = "var(--correct-color)";
+                    document.getElementById('next-btn').style.display = "block";
+                }
+            }
+        }
+
+        function resetCurrentSentence() {
+            const chips = document.querySelectorAll('.word-pool .word-chip');
+            chips.forEach(c => c.classList.remove('used'));
+            userSentence = [];
+            document.getElementById('target-zone').innerHTML = "";
+            document.getElementById('target-zone').className = "drop-zone";
+            document.getElementById('feedback').textContent = "";
+        }
+
+        function loadNextSentence() {
+            currentIndex++;
+            if (currentIndex < taskData.length) {
+                loadSentence();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <h1>Ausgezeichnet!</h1>
+                <p>Du hast alle 6 Sätze korrekt zusammengebaut.</p>
+                <div style="font-size: 3rem; margin: 20px;">🏆</div>
+                <button class="btn-reset" onclick="location.reload()">Nochmal üben</button>
+            `;
+        }
+
+        init();
+    </script>
+</body>
+</html>
