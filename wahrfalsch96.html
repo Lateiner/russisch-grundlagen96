@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wahr oder Falsch: ПРЕДЪЯВЛЯТЬ vs. ИЗЪЯВЛЯТЬ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .quiz-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 550px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .statement-container {
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f1f7fe;
+            border-radius: 12px;
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .statement-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            color: white;
+        }
+
+        .btn-true { background-color: var(--correct-color); }
+        .btn-false { background-color: var(--incorrect-color); }
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        #feedback {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: none;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .feedback-correct { background-color: #d5f5e3; color: #196f3d; border: 1px solid var(--correct-color); }
+        .feedback-incorrect { background-color: #fadbd8; color: #943126; border: 1px solid var(--incorrect-color); }
+
+        .btn-next {
+            background-color: var(--primary-color);
+            padding: 12px 25px;
+            display: none;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 480px) {
+            .statement-text { font-size: 1.1rem; }
+            .options { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-card">
+        <div class="progress" id="progress">Frage 1 von 6</div>
+        
+        <div class="statement-container">
+            <p class="statement-text" id="statement-text">Lädt...</p>
+        </div>
+
+        <div id="feedback"></div>
+
+        <div class="options" id="options">
+            <button class="btn btn-true" onclick="handleAnswer(true)">WAHR</button>
+            <button class="btn btn-false" onclick="handleAnswer(false)">FALSCH</button>
+        </div>
+
+        <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">Nächste Frage</button>
+        <button class="btn btn-next" id="restart-btn" style="background-color: var(--secondary-color);" onclick="restartQuiz()">Neu starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                statement: "Man kann ein Dokument ИЗЪЯВЛЯТЬ.",
+                correct: false,
+                explanation: "<b>Falsch.</b> Dokumente (Pass, Ticket, Ausweis) werden <b>ПРЕДЪЯВЛЕНЫ</b>. Das Verb ИЗЪЯВЛЯТЬ nutzt man für den inneren Willen oder Gefühle."
+            },
+            {
+                statement: "Das Verb ПРЕДЪЯВИТЬ passt perfekt zum Wort ПАСПОРТ.",
+                correct: true,
+                explanation: "<b>Wahr!</b> Wenn man den Pass bei der Post oder Kontrolle vorzeigt, nutzt man immer <b>ПРЕДЪЯВИТЬ ПАСПОРТ</b>."
+            },
+            {
+                statement: "ИЗЪЯВЛЯТЬ verwendet man oft für offizielle rechtliche Forderungen.",
+                correct: false,
+                explanation: "<b>Falsch.</b> Offizielle Forderungen, Ansprüche oder Klagen werden mit <b>ПРЕДЪЯВЛЯТЬ</b> ausgedrückt (z.B. предъявить требования)."
+            },
+            {
+                statement: "Die Redewendung ИЗЪЯВИТЬ ЖЕЛАНИЕ ist gehobener Stil für 'einen Wunsch äußern'.",
+                correct: true,
+                explanation: "<b>Wahr!</b> ИЗЪЯВИТЬ ЖЕЛАНИЕ oder СОГЛАСИЕ klingt formeller und offizieller als das einfache Verb выражать."
+            },
+            {
+                statement: "Wenn jemand zu spät zur Arbeit kommt, kann man ironisch sagen: 'Наконец-то он изъявил прийти!'",
+                correct: true,
+                explanation: "<b>Wahr!</b> Das ist eine typische ironische Verwendung, als würde sich die Person 'herablassen' oder 'endlich den Willen zeigen'."
+            },
+            {
+                statement: "Das Verb ПРЕДЪЯВИТЬ nutzt man, wenn der Arzt einem die Rechnung (счёт) gibt.",
+                correct: true,
+                explanation: "<b>Wahr!</b> Eine Rechnung ist eine Zahlungsaufforderung, also wird sie <b>предъявлена</b>."
+            }
+        ];
+
+        let currentIndex = 0;
+        let shuffledData = [];
+
+        function shuffleQuiz() {
+            shuffledData = [...quizData].sort(() => Math.random() - 0.5);
+        }
+
+        function loadQuestion() {
+            const current = shuffledData[currentIndex];
+            document.getElementById('progress').textContent = `Frage ${currentIndex + 1} von ${shuffledData.length}`;
+            document.getElementById('statement-text').textContent = current.statement;
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('restart-btn').style.display = 'none';
+            document.getElementById('options').style.display = 'grid';
+            
+            const buttons = document.querySelectorAll('.options .btn');
+            buttons.forEach(b => b.disabled = false);
+        }
+
+        function handleAnswer(studentAnswer) {
+            const current = shuffledData[currentIndex];
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.options .btn');
+            
+            buttons.forEach(b => b.disabled = true);
+            feedback.style.display = 'block';
+            feedback.innerHTML = current.explanation;
+
+            if (studentAnswer === current.correct) {
+                feedback.className = 'feedback-correct';
+            } else {
+                feedback.className = 'feedback-incorrect';
+            }
+
+            if (currentIndex < shuffledData.length - 1) {
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                document.getElementById('restart-btn').style.display = 'block';
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function restartQuiz() {
+            currentIndex = 0;
+            shuffleQuiz();
+            loadQuestion();
+        }
+
+        // Initialer Start
+        shuffleQuiz();
+        loadQuestion();
+    </script>
+</body>
+</html>
