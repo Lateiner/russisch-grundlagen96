@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bedeutungs-Check: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .quiz-card {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .phrase-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-bottom: 4px solid #dee2e6;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            font-size: 1.1rem;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        @media (hover: hover) {
+            .option-btn:hover:not(:disabled) {
+                border-color: var(--secondary-color);
+                background-color: #f0f8ff;
+            }
+        }
+
+        .option-btn.correct {
+            background-color: var(--correct-color) !important;
+            border-color: var(--correct-color) !important;
+            color: white;
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--incorrect-color) !important;
+            border-color: var(--incorrect-color) !important;
+            color: white;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .next-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+            width: 100%;
+        }
+
+        @media (max-width: 480px) {
+            .phrase-display { font-size: 1.4rem; }
+            .quiz-card { padding: 20px; }
+            .option-btn { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-card">
+        <div class="progress" id="progress">Aufgabe 1 von 6</div>
+        
+        <div class="phrase-display" id="phrase-text">изъявить готовность</div>
+
+        <div id="feedback"></div>
+
+        <div class="options-grid" id="options-container">
+            <!-- Buttons werden per JS eingefügt -->
+        </div>
+
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Nächste Frage</button>
+        <button class="next-btn" id="restart-btn" style="background: var(--secondary-color)" onclick="initQuiz()">Nochmal starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                phrase: "изъявить готовность",
+                options: [
+                    "Bereitschaft zeigen / bekunden",
+                    "Einen Ausweis vorzeigen",
+                    "Eine Forderung stellen",
+                    "Einen Fehler zugeben"
+                ],
+                correct: 0,
+                explanation: "Richtig! Das Verb ИЗЪЯВИТЬ wird im offiziellen Stil genutzt, um Bereitschaft (готовность) oder Zustimmung auszudrücken."
+            },
+            {
+                phrase: "предъявить паспорт",
+                options: [
+                    "Einen Pass beantragen",
+                    "Den Reisepass vorzeigen",
+                    "Seinen Namen nennen",
+                    "Einen Pass verlieren"
+                ],
+                correct: 1,
+                explanation: "Korrekt! ПРЕДЪЯВИТЬ bedeutet hier 'vorzeigen' oder 'vorweisen', um die Identität zu beweisen."
+            },
+            {
+                phrase: "изъявить желание",
+                options: [
+                    "Etwas unbedingt kaufen",
+                    "Einen Wunsch äußern / bekunden",
+                    "Jemanden um Hilfe bitten",
+                    "Eine Einladung ablehnen"
+                ],
+                correct: 1,
+                explanation: "Richtig! Es ist eine gehobene Art zu sagen, dass man einen Wunsch (желание) hat oder etwas möchte."
+            },
+            {
+                phrase: "предъявить счёт",
+                options: [
+                    "Geld auf die Bank bringen",
+                    "Ein Konto eröffnen",
+                    "Eine Rechnung präsentieren / stellen",
+                    "Den Preis verhandeln"
+                ],
+                correct: 2,
+                explanation: "Genau! ПРЕДЪЯВИТЬ СЧЁТ bedeutet, jemandem offiziell eine Rechnung zur Zahlung vorzulegen."
+            },
+            {
+                phrase: "изъявить согласие",
+                options: [
+                    "Zustimmung ausdrücken / bekunden",
+                    "Einen Kompromiss ablehnen",
+                    "Eine Meinung ändern",
+                    "Sich offiziell beschweren"
+                ],
+                correct: 0,
+                explanation: "Richtig! In offiziellen Texten bedeutet dies, dass man formell sein Einverständnis (согласие) gibt."
+            },
+            {
+                phrase: "предъявить претензию",
+                options: [
+                    "Einen Vorschlag machen",
+                    "Höflich nachfragen",
+                    "Einen Anspruch / eine Reklamation vorbringen",
+                    "Ein Dokument unterschreiben"
+                ],
+                correct: 2,
+                explanation: "Korrekt! ПРЕДЪЯВЛЯТЬ wird für offizielle Forderungen oder Vorwürfe (претензия) verwendet."
+            }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+
+        function initQuiz() {
+            currentIndex = 0;
+            quizData.sort(() => Math.random() - 0.5);
+            document.getElementById('restart-btn').style.display = 'none';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            canClick = true;
+            const data = quizData[currentIndex];
+            document.getElementById('progress').textContent = `Aufgabe ${currentIndex + 1} von ${quizData.length}`;
+            document.getElementById('phrase-text').textContent = data.phrase;
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => handleAnswer(index, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedIndex, btn) {
+            if (!canClick) return;
+            canClick = false;
+
+            const data = quizData[currentIndex];
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.option-btn');
+
+            feedback.style.display = 'block';
+            feedback.textContent = data.explanation;
+
+            if (selectedIndex === data.correct) {
+                btn.classList.add('correct');
+                feedback.style.backgroundColor = "#d5f5e3";
+                feedback.style.color = "#196f3d";
+            } else {
+                btn.classList.add('incorrect');
+                feedback.style.backgroundColor = "#fadbd8";
+                feedback.style.color = "#943126";
+                feedback.textContent = "Leider falsch. " + data.explanation;
+                
+                // Richtige Lösung markieren
+                buttons[data.correct].classList.add('correct');
+            }
+
+            if (currentIndex < quizData.length - 1) {
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                document.getElementById('restart-btn').style.display = 'block';
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            showQuestion();
+        }
+
+        // Start
+        initQuiz();
+    </script>
+</body>
+</html>
