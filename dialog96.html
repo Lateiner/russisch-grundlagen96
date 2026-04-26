@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialog-Training: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 10px; text-align: center; }
+        .instruction { text-align: center; margin-bottom: 30px; color: #7f8c8d; }
+
+        .dialog-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border-left: 4px solid var(--secondary-color);
+            background: #f9f9f9;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .dialog-line {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .speaker {
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-right: 10px;
+        }
+
+        /* Dropdown Styling */
+        select {
+            padding: 5px 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+            margin: 0 5px;
+        }
+
+        select.correct {
+            border-color: var(--correct-color);
+            background-color: #eafaf1;
+        }
+
+        select.incorrect {
+            border-color: var(--incorrect-color);
+            background-color: #fdedec;
+        }
+
+        .feedback-text {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 5px;
+            display: block;
+            min-height: 1.2rem;
+        }
+
+        .correct-msg { color: var(--correct-color); }
+        .incorrect-msg { color: var(--incorrect-color); }
+
+        .btn-reset {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 500px) {
+            .dialog-line { font-size: 1rem; }
+            select { width: 100%; margin: 10px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Dialog-Vervollständigung</h1>
+        <p class="instruction">Wähle die passende Verbform aus dem Menü aus.</p>
+
+        <div id="quiz-container">
+            <!-- Dialog 1 -->
+            <div class="dialog-section">
+                <div class="dialog-line">
+                    <span class="speaker">Охранник:</span> 
+                    Здравствуйте. Пожалуйста, 
+                    <select onchange="checkSelection(this, 'предъявите')">
+                        <option value="">Выберите...</option>
+                        <option value="изъявите">изъявите</option>
+                        <option value="предъявите">предъявите</option>
+                    </select> 
+                    ваш пропуск.
+                    <span class="feedback-text"></span>
+                </div>
+                <div class="dialog-line">
+                    <span class="speaker">Сотрудник:</span> Да, конечно. Вот он.
+                </div>
+            </div>
+
+            <!-- Dialog 2 -->
+            <div class="dialog-section">
+                <div class="dialog-line">
+                    <span class="speaker">Начальник:</span> 
+                    Я рад, что вы 
+                    <select onchange="checkSelection(this, 'изъявили')">
+                        <option value="">Выберите...</option>
+                        <option value="предъявили">предъявили</option>
+                        <option value="изъявили">изъявили</option>
+                    </select> 
+                    желание работать в нашем отделе.
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+
+            <!-- Dialog 3 -->
+            <div class="dialog-section">
+                <div class="dialog-line">
+                    <span class="speaker">Работник почты:</span> 
+                    Чтобы получить посылку, вы должны 
+                    <select onchange="checkSelection(this, 'предъявить')">
+                        <option value="">Выберите...</option>
+                        <option value="предъявить">предъявить</option>
+                        <option value="изъявить">изъявить</option>
+                    </select> 
+                    паспорт.
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+
+            <!-- Dialog 4 -->
+            <div class="dialog-section">
+                <div class="dialog-line">
+                    <span class="speaker">Коллега (иронично):</span> 
+                    О, ты наконец-то 
+                    <select onchange="checkSelection(this, 'изъявил')">
+                        <option value="">Выберите...</option>
+                        <option value="изъявил">изъявил</option>
+                        <option value="предъявил">предъявил</option>
+                    </select> 
+                    прийти на работу!
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-reset" onclick="resetQuiz()">Neu starten</button>
+    </div>
+
+    <script>
+        function checkSelection(selectElement, correctAnswer) {
+            const feedbackSpan = selectElement.parentElement.querySelector('.feedback-text');
+            const selectedValue = selectElement.value;
+
+            if (selectedValue === "") {
+                selectElement.className = "";
+                feedbackSpan.textContent = "";
+                return;
+            }
+
+            if (selectedValue === correctAnswer) {
+                selectElement.className = "correct";
+                feedbackSpan.textContent = "Richtig!";
+                feedbackSpan.className = "feedback-text correct-msg";
+            } else {
+                selectElement.className = "incorrect";
+                feedbackSpan.textContent = "Leider falsch. Überlege noch einmal.";
+                feedbackSpan.className = "feedback-text incorrect-msg";
+            }
+        }
+
+        function resetQuiz() {
+            const dropdowns = document.querySelectorAll('select');
+            const feedbacks = document.querySelectorAll('.feedback-text');
+            
+            dropdowns.forEach(select => {
+                select.value = "";
+                select.className = "";
+            });
+
+            feedbacks.forEach(fb => {
+                fb.textContent = "";
+                fb.className = "feedback-text";
+            });
+            
+            // Optional: Zufällige Reihenfolge der Dialoge beim Neustart
+            shuffleDialogs();
+        }
+
+        function shuffleDialogs() {
+            const container = document.getElementById('quiz-container');
+            const sections = Array.from(container.getElementsByClassName('dialog-section'));
+            sections.sort(() => Math.random() - 0.5);
+            sections.forEach(section => container.appendChild(section));
+        }
+
+        // Initial beim Laden mischen
+        window.onload = shuffleDialogs;
+    </script>
+</body>
+</html>
