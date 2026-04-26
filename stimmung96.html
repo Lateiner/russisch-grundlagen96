@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stimmungs-Barometer: ИЗЪЯВЛЯТЬ vs. ПРЕДЪЯВЛЯТЬ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f0f2f5;
+            --iz-color: #9b59b6; /* Lila für Gefühle/Wille */
+            --pre-color: #2980b9; /* Blau für Offizielles */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .barometer-card {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        /* Das Barometer-Display */
+        .display-unit {
+            background: #f8f9fa;
+            border: 4px solid #dee2e6;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            padding: 40px 20px;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .display-unit.iz-theme { border-color: var(--iz-color); background-color: #f5eef8; }
+        .display-unit.pre-theme { border-color: var(--pre-color); background-color: #ebf5fb; }
+
+        .current-word {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            z-index: 2;
+            position: relative;
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .btn-verb {
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: 3px solid #bdc3c7;
+            border-radius: 15px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+            color: var(--primary-color);
+        }
+
+        .btn-verb:active { transform: scale(0.98); }
+
+        .btn-verb.selected-correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+
+        .btn-verb.selected-incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+
+        #feedback {
+            margin-top: 20px;
+            min-height: 50px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .feedback-correct { background-color: #d5f5e3; color: #196f3d; }
+        .feedback-incorrect { background-color: #fadbd8; color: #943126; }
+
+        .btn-next {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        @media (max-width: 400px) {
+            .current-word { font-size: 1.5rem; }
+            .btn-verb { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="barometer-card">
+        <div class="progress-text" id="progress-text">Aufgabe 1 von 8</div>
+        
+        <div class="display-unit" id="display-unit">
+            <span class="category-icon" id="category-icon">💭</span>
+            <span class="current-word" id="current-word">желание</span>
+        </div>
+
+        <div id="feedback"></div>
+
+        <div class="options" id="options">
+            <button class="btn-verb" onclick="handleChoice('ИЗЪЯВЛЯТЬ', this)">ИЗЪЯВЛЯТЬ</button>
+            <button class="btn-verb" onclick="handleChoice('ПРЕДЪЯВЛЯТЬ', this)">ПРЕДЪЯВЛЯТЬ</button>
+        </div>
+
+        <button class="btn-next" id="next-btn" onclick="nextTask()">Nächste Aufgabe</button>
+    </div>
+
+    <script>
+        const tasks = [
+            { word: "желание", verb: "ИЗЪЯВЛЯТЬ", icon: "✨", note: "Richtig! ИЗЪЯВЛЯТЬ nutzt man für den inneren Willen oder Wünsche." },
+            { word: "паспорт", verb: "ПРЕДЪЯВЛЯТЬ", icon: "🆔", note: "Richtig! Dokumente wie der Pass werden ПРЕДЪЯВЛЯТЬ." },
+            { word: "согласие", verb: "ИЗЪЯВЛЯТЬ", icon: "🤝", note: "Korrekt! Zustimmung (согласие) ist eine Willensäußerung." },
+            { word: "счёт", verb: "ПРЕДЪЯВЛЯТЬ", icon: "🧾", note: "Richtig! Eine Rechnung ist eine Forderung: ПРЕДЪЯВЛЯТЬ." },
+            { word: "готовность", verb: "ИЗЪЯВЛЯТЬ", icon: "✅", note: "Korrekt! Bereitschaft (готовность) bekunden: ИЗЪЯВЛЯТЬ." },
+            { word: "билет", verb: "ПРЕДЪЯВЛЯТЬ", icon: "🎫", note: "Richtig! Fahrkarten zur Kontrolle: ПРЕДЪЯВЛЯТЬ." },
+            { word: "радость", verb: "ИЗЪЯВЛЯТЬ", icon: "😊", note: "Richtig! Gefühle wie Freude drückt man gehoben mit ИЗЪЯВЛЯТЬ aus." },
+            { word: "требование", verb: "ПРЕДЪЯВЛЯТЬ", icon: "⚖️", note: "Richtig! Forderungen oder Ansprüche: ПРЕДЪЯВЛЯТЬ." }
+        ];
+
+        let currentIndex = 0;
+        let shuffledTasks = [];
+        let canClick = true;
+
+        function init() {
+            shuffledTasks = [...tasks].sort(() => Math.random() - 0.5);
+            showTask();
+        }
+
+        function showTask() {
+            canClick = true;
+            const task = shuffledTasks[currentIndex];
+            
+            document.getElementById('progress-text').textContent = `Aufgabe ${currentIndex + 1} von ${shuffledTasks.length}`;
+            document.getElementById('current-word').textContent = task.word;
+            document.getElementById('category-icon').textContent = task.icon;
+            
+            const display = document.getElementById('display-unit');
+            display.className = 'display-unit'; // reset colors
+            
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+            
+            const buttons = document.querySelectorAll('.btn-verb');
+            buttons.forEach(btn => {
+                btn.className = 'btn-verb';
+                btn.disabled = false;
+            });
+        }
+
+        function handleChoice(chosenVerb, btnElement) {
+            if (!canClick) return;
+            
+            const task = shuffledTasks[currentIndex];
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.btn-verb');
+            const display = document.getElementById('display-unit');
+
+            canClick = false;
+            buttons.forEach(btn => btn.disabled = true);
+
+            feedback.style.display = 'block';
+            feedback.textContent = task.note;
+
+            if (chosenVerb === task.verb) {
+                btnElement.classList.add('selected-correct');
+                feedback.className = 'feedback-correct';
+                display.classList.add(task.verb === 'ИЗЪЯВЛЯТЬ' ? 'iz-theme' : 'pre-theme');
+            } else {
+                btnElement.classList.add('selected-incorrect');
+                feedback.className = 'feedback-incorrect';
+                feedback.textContent = "Leider falsch. Überlege: Ist es ein Gefühl/Wille oder ein Dokument?";
+                
+                // Richtigen Button zeigen
+                buttons.forEach(btn => {
+                    if (btn.textContent === task.verb) btn.classList.add('selected-correct');
+                });
+            }
+
+            document.getElementById('next-btn').style.display = 'block';
+            if (currentIndex === shuffledTasks.length - 1) {
+                document.getElementById('next-btn').textContent = "Spiel abschließen";
+            }
+        }
+
+        function nextTask() {
+            currentIndex++;
+            if (currentIndex < shuffledTasks.length) {
+                showTask();
+            } else {
+                finishGame();
+            }
+        }
+
+        function finishGame() {
+            document.getElementById('display-unit').innerHTML = "<span class='category-icon'>🏆</span><span class='current-word'>Gänsehaut-Ergebnis!</span>";
+            document.getElementById('feedback').textContent = "Du kannst nun Gefühle (ИЗЪЯВЛЯТЬ) und Dokumente (ПРЕДЪЯВЛЯТЬ) perfekt unterscheiden.";
+            document.getElementById('options').style.display = 'none';
+            document.getElementById('next-btn').textContent = "Nochmal spielen";
+            document.getElementById('next-btn').onclick = () => location.reload();
+        }
+
+        init();
+    </script>
+</body>
+</html>
