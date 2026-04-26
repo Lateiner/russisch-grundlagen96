@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stil-Check: Offiziell oder Privat?</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e67e22; /* Orange für Privat/Neutral */
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 10px; text-align: center; }
+        .instruction { text-align: center; margin-bottom: 25px; color: #7f8c8d; font-size: 1rem; }
+
+        .sentence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sentence-item {
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sentence-item:hover {
+            border-color: var(--secondary-color);
+            background-color: #f8fbff;
+        }
+
+        .sentence-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .style-tag {
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none;
+            margin-bottom: 5px;
+        }
+
+        .feedback-note {
+            font-size: 0.9rem;
+            display: none;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        /* Zustände nach Klick */
+        .sentence-item.checked-official {
+            border-color: var(--correct-color);
+            background-color: #f0fff4;
+        }
+        .sentence-item.checked-official .style-tag { display: block; color: var(--correct-color); }
+        .sentence-item.checked-official .feedback-note { display: block; color: #196f3d; }
+
+        .sentence-item.checked-private {
+            border-color: var(--incorrect-color);
+            background-color: #fff9f0;
+        }
+        .sentence-item.checked-private .style-tag { display: block; color: var(--incorrect-color); }
+        .sentence-item.checked-private .feedback-note { display: block; color: #935116; }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-reset {
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .sentence-text { font-size: 1rem; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Stil-Analyse: ИЗЪЯВЛЯТЬ</h1>
+        <p class="instruction">Klicke die Sätze an, um ihren Stil zu prüfen. Findest du die offiziellen Dokumenten-Phrasen?</p>
+
+        <div id="sentence-container" class="sentence-list">
+            <!-- Sätze werden per JS eingefügt -->
+        </div>
+
+        <div class="controls">
+            <button class="btn-reset" onclick="resetGame()">Neu starten & mischen</button>
+        </div>
+    </div>
+
+    <script>
+        const sentences = [
+            {
+                text: "Стороны изъявили согласие на подписание контракта.",
+                isOfficial: true,
+                styleName: "Offizieller Stil",
+                note: "Richtig! Das Verb 'изъявлять' kennzeichnet hier den formalen, amtlichen Stil."
+            },
+            {
+                text: "Я согласен пойти с тобой в кино завтра.",
+                isOfficial: false,
+                styleName: "Privat / Neutral",
+                note: "Dies ist Alltagssprache. Hier nutzt man einfach das Adjektiv 'согласен'."
+            },
+            {
+                text: "Директор изъявил готовность рассмотреть нашу жалобу.",
+                isOfficial: true,
+                styleName: "Offizieller Stil",
+                note: "Korrekt. In Firmenkorrespondenz oder Berichten nutzt man 'изъявить готовность'."
+            },
+            {
+                text: "Он просто сказал: «Да, я не против помочь».",
+                isOfficial: false,
+                styleName: "Privat / Neutral",
+                note: "Umgangssprache. Keine Spur vom offiziellen Verb 'изъявлять'."
+            },
+            {
+                text: "Компания изъявила желание инвестировать в проект.",
+                isOfficial: true,
+                styleName: "Offizieller Stil",
+                note: "Richtig! 'Изъявить желание' wird in offiziellen Pressemitteilungen oder Verträgen verwendet."
+            },
+            {
+                text: "Друг выразил желание погулять в парке.",
+                isOfficial: false,
+                styleName: "Privat / Neutral",
+                note: "Neutraler Stil. 'Выразить желание' ist zwar korrekt, aber nicht so förmlich wie 'изъявить'."
+            }
+        ];
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function initQuiz() {
+            const container = document.getElementById('sentence-container');
+            container.innerHTML = '';
+            
+            const shuffledSentences = shuffle([...sentences]);
+
+            shuffledSentences.forEach((s) => {
+                const div = document.createElement('div');
+                div.className = 'sentence-item';
+                div.onclick = () => {
+                    if (s.isOfficial) {
+                        div.classList.add('checked-official');
+                    } else {
+                        div.classList.add('checked-private');
+                    }
+                };
+
+                div.innerHTML = `
+                    <span class="style-tag">${s.styleName}</span>
+                    <span class="sentence-text">${s.text}</span>
+                    <span class="feedback-note">${s.note}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function resetGame() {
+            initQuiz();
+        }
+
+        // Initialisierung
+        initQuiz();
+    </script>
+</body>
+</html>
