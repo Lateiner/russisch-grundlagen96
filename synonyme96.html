@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synonym-Puzzle: 8 Paare</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 10px; text-align: center; }
+        .instruction { font-size: 0.9rem; margin-bottom: 15px; text-align: center; max-width: 600px; color: #555; }
+
+        #feedback {
+            height: 30px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .matching-container {
+            width: 100%;
+            max-width: 850px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .column-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .match-btn {
+            padding: 12px 8px;
+            background-color: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: transform 0.2s, background-color 0.3s, opacity 1.5s ease-out, border-color 0.3s;
+            text-align: center;
+            min-height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Spezialklassen */
+        .match-btn.selected {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+
+        .match-btn.correct {
+            background-color: #d5f5e3;
+            border-color: var(--correct-color);
+            color: #196f3d;
+        }
+
+        .match-btn.incorrect {
+            background-color: #fadbd8;
+            border-color: var(--incorrect-color);
+            color: #943126;
+        }
+
+        .match-btn.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-reset {
+            margin-top: 25px;
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Mobile Anpassungen */
+        @media (max-width: 500px) {
+            .match-btn { font-size: 0.8rem; padding: 8px 4px; min-height: 50px; }
+            .matching-container { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Synonym-Zuordnung (8 Paare)</h1>
+    <p class="instruction">Verbinde den gehobenen Ausdruck links mit dem einfachen rechts. Korrekte Paare verschwinden langsam.</p>
+
+    <div id="feedback"></div>
+
+    <div class="matching-container">
+        <div class="column" id="col-gehoben">
+            <div class="column-header">Gehobener Stil</div>
+        </div>
+        <div class="column" id="col-einfach">
+            <div class="column-header">Einfacher Stil</div>
+        </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetGame()">Neu starten</button>
+
+    <script>
+        const pairs = [
+            { a: "ИЗЪЯВЛЯТЬ", b: "выражать" },
+            { a: "ПРЕДЪЯВЛЯТЬ", b: "показывать" },
+            { a: "ПРЕДЪЯВИТЬ", b: "продемонстрировать" },
+            { a: "ИЗЪЯВИТЬ ЖЕЛАНИЕ", b: "выразить желание" },
+            { a: "ПРЕДЪЯВЛЯТЬ ПАСПОРТ", b: "показывать паспорт" },
+            { a: "ИЗЪЯВИТЬ СОГЛАСИЕ", b: "выразить согласие" },
+            { a: "ПРЕДЪЯВИТЬ СЧЁТ", b: "дать счёт" },
+            { a: "ИЗЪЯВИТЬ ГОТОВНОСТЬ", b: "показать готовность" }
+        ];
+
+        let selectedBtnA = null;
+        let canClick = true;
+        let matchedCount = 0;
+
+        function initGame() {
+            const colA = document.getElementById('col-gehoben');
+            const colB = document.getElementById('col-einfach');
+            const feedback = document.getElementById('feedback');
+            
+            // Zurücksetzen
+            colA.innerHTML = '<div class="column-header">Gehobener Stil</div>';
+            colB.innerHTML = '<div class="column-header">Einfacher Stil</div>';
+            feedback.textContent = "";
+            selectedBtnA = null;
+            matchedCount = 0;
+            canClick = true;
+
+            // Mischen und Erstellen der linken Spalte
+            const leftSide = pairs.map((p, i) => ({ text: p.a, id: i }));
+            leftSide.sort(() => Math.random() - 0.5);
+            leftSide.forEach(item => {
+                const btn = createBtn(item.text, item.id, 'left');
+                colA.appendChild(btn);
+            });
+
+            // Mischen und Erstellen der rechten Spalte
+            const rightSide = pairs.map((p, i) => ({ text: p.b, id: i }));
+            rightSide.sort(() => Math.random() - 0.5);
+            rightSide.forEach(item => {
+                const btn = createBtn(item.text, item.id, 'right');
+                colB.appendChild(btn);
+            });
+        }
+
+        function createBtn(text, id, side) {
+            const btn = document.createElement('div');
+            btn.className = 'match-btn';
+            btn.textContent = text;
+            btn.dataset.pairId = id;
+            btn.onclick = () => side === 'left' ? handleLeftClick(btn) : handleRightClick(btn);
+            return btn;
+        }
+
+        function handleLeftClick(btn) {
+            if (!canClick || btn.classList.contains('correct')) return;
+            if (selectedBtnA) selectedBtnA.classList.remove('selected');
+            
+            selectedBtnA = btn;
+            btn.classList.add('selected');
+            updateFeedback("Wähle nun das Synonym rechts.", "var(--secondary-color)");
+        }
+
+        function handleRightClick(btnB) {
+            if (!canClick || !selectedBtnA || btnB.classList.contains('correct')) return;
+
+            canClick = false;
+            const idA = selectedBtnA.dataset.pairId;
+            const idB = btnB.dataset.pairId;
+
+            if (idA === idB) {
+                // RICHTIG
+                const btnA = selectedBtnA;
+                btnA.classList.remove('selected');
+                btnA.classList.add('correct');
+                btnB.classList.add('correct');
+                
+                updateFeedback("Richtig!", "var(--correct-color)");
+                
+                // Langsam verschwinden lassen
+                setTimeout(() => {
+                    btnA.classList.add('fade-out');
+                    btnB.classList.add('fade-out');
+                }, 600);
+
+                matchedCount++;
+                selectedBtnA = null;
+                canClick = true;
+
+                if (matchedCount === pairs.length) {
+                    setTimeout(() => {
+                        updateFeedback("Hervorragend! Alle Synonyme gefunden.", "var(--correct-color)");
+                    }, 2000);
+                }
+            } else {
+                // FALSCH
+                btnB.classList.add('incorrect');
+                updateFeedback("Das passt nicht!", "var(--incorrect-color)");
+                
+                setTimeout(() => {
+                    btnB.classList.remove('incorrect');
+                    if (selectedBtnA) selectedBtnA.classList.remove('selected');
+                    selectedBtnA = null;
+                    canClick = true;
+                }, 1000);
+            }
+        }
+
+        function updateFeedback(text, color) {
+            const fb = document.getElementById('feedback');
+            fb.textContent = text;
+            fb.style.color = color;
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
