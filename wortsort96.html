@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sortiermaschine: ПРЕДЪЯВЛЯТЬ vs. ИЗЪЯВЛЯТЬ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --box-a-color: #e74c3c;
+            --box-b-color: #27ae60;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        h1 { margin-bottom: 10px; font-size: 1.4rem; text-align: center; }
+        .instruction { margin-bottom: 15px; text-align: center; font-size: 0.95rem; max-width: 500px; }
+
+        /* Feedback-Bereich */
+        #feedback-message {
+            height: 30px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        /* Wort-Pool */
+        .item-pool {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 100px;
+            border: 2px dashed #bdc3c7;
+            margin-bottom: 20px;
+        }
+
+        .word-item {
+            padding: 10px 18px;
+            background-color: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            user-select: none;
+            font-size: 1rem;
+        }
+
+        .word-item.selected {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        /* Boxen */
+        .boxes-container {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .boxes-container { grid-template-columns: 1fr; }
+        }
+
+        .drop-box {
+            background: white;
+            border: 3px solid #bdc3c7;
+            border-radius: 12px;
+            padding: 15px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .drop-box h2 { font-size: 1.1rem; margin-bottom: 15px; pointer-events: none; }
+        .box-a { border-bottom: 8px solid var(--box-a-color); }
+        .box-b { border-bottom: 8px solid var(--box-b-color); }
+
+        .sorted-list {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        /* Feedback-Klassen */
+        .word-item.correct {
+            background-color: #d5f5e3;
+            border-color: var(--correct-color);
+            color: #196f3d;
+        }
+
+        .word-item.incorrect {
+            background-color: #fadbd8;
+            border-color: var(--incorrect-color);
+            color: #943126;
+        }
+
+        .btn-reset {
+            margin-top: 25px;
+            padding: 12px 30px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Wort-Sortiermaschine</h1>
+    <p class="instruction">Wähle ein Wort aus und klicke auf die Box, in die es gehört. Du erhältst sofort eine Rückmeldung.</p>
+
+    <div id="feedback-message"></div>
+
+    <div id="pool" class="item-pool">
+        <!-- Wörter -->
+    </div>
+
+    <div class="boxes-container">
+        <div class="drop-box box-a" onclick="moveToBox('A')">
+            <h2>ПРЕДЪЯВЛЯТЬ</h2>
+            <div id="list-A" class="sorted-list"></div>
+        </div>
+        <div class="drop-box box-b" onclick="moveToBox('B')">
+            <h2>ИЗЪЯВЛЯТЬ</h2>
+            <div id="list-B" class="sorted-list"></div>
+        </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetGame()">Neu starten</button>
+
+    <script>
+        const words = [
+            { text: "паспорт", cat: "A" },
+            { text: "счёт", cat: "A" },
+            { text: "ультиматум", cat: "A" },
+            { text: "пропуск", cat: "A" },
+            { text: "требование", cat: "A" },
+            { text: "желание", cat: "B" },
+            { text: "согласие", cat: "B" },
+            { text: "готовность", cat: "B" },
+            { text: "радость", cat: "B" },
+            { text: "волю", cat: "B" }
+        ];
+
+        let selectedWordElement = null;
+        const feedbackDisplay = document.getElementById('feedback-message');
+
+        function initGame() {
+            const pool = document.getElementById('pool');
+            pool.innerHTML = '';
+            document.getElementById('list-A').innerHTML = '';
+            document.getElementById('list-B').innerHTML = '';
+            feedbackDisplay.textContent = '';
+            
+            const shuffled = [...words].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(wordObj => {
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.textContent = wordObj.text;
+                div.dataset.category = wordObj.cat;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    selectWord(div);
+                };
+                pool.appendChild(div);
+            });
+        }
+
+        function selectWord(el) {
+            if (selectedWordElement) {
+                selectedWordElement.classList.remove('selected');
+            }
+            selectedWordElement = el;
+            el.classList.add('selected');
+            feedbackDisplay.textContent = "Wort ausgewählt. Wähle nun eine Box.";
+            feedbackDisplay.style.color = "var(--secondary-color)";
+        }
+
+        function moveToBox(boxId) {
+            if (!selectedWordElement) return;
+
+            const targetList = document.getElementById(`list-${boxId}`);
+            const correctCat = selectedWordElement.dataset.category;
+
+            // Sofortiges Feedback prüfen
+            selectedWordElement.classList.remove('selected', 'correct', 'incorrect');
+            
+            if (boxId === correctCat) {
+                selectedWordElement.classList.add('correct');
+                feedbackDisplay.textContent = "Richtig!";
+                feedbackDisplay.style.color = "var(--correct-color)";
+            } else {
+                selectedWordElement.classList.add('incorrect');
+                feedbackDisplay.textContent = "Leider falsch, probiere es nochmal!";
+                feedbackDisplay.style.color = "var(--incorrect-color)";
+            }
+
+            // Element in die Box verschieben
+            targetList.appendChild(selectedWordElement);
+            selectedWordElement = null;
+        }
+
+        function resetGame() {
+            selectedWordElement = null;
+            initGame();
+        }
+
+        // Erlaubt das Zurücklegen in den Pool
+        document.getElementById('pool').onclick = () => {
+            if (selectedWordElement) {
+                document.getElementById('pool').appendChild(selectedWordElement);
+                selectedWordElement.classList.remove('selected', 'correct', 'incorrect');
+                selectedWordElement = null;
+                feedbackDisplay.textContent = "Wort zurückgelegt.";
+                feedbackDisplay.style.color = "var(--primary-color)";
+            }
+        };
+
+        initGame();
+    </script>
+</body>
+</html>
