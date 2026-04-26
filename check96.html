@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprechblasen-Check: Wer fordert Schadensersatz?</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --bubble-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 10px; text-align: center; }
+        .instruction { max-width: 600px; text-align: center; margin-bottom: 30px; font-size: 1rem; color: #555; }
+
+        #feedback-area {
+            width: 100%;
+            max-width: 800px;
+            min-height: 70px;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 3px solid #bdc3c7;
+            transition: all 0.3s;
+        }
+
+        .chat-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 900px;
+            align-items: end;
+        }
+
+        @media (max-width: 700px) {
+            .chat-container { grid-template-columns: 1fr; gap: 50px; }
+        }
+
+        .person-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .person-wrapper:hover { transform: translateY(-5px); }
+
+        .bubble {
+            background: var(--bubble-bg);
+            border: 3px solid #bdc3c7;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.4;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        /* Das "Schwänzchen" der Sprechblase */
+        .bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: #bdc3c7 transparent transparent;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+        }
+
+        /* Zustände nach dem Klick */
+        .correct .bubble { border-color: var(--correct-color); background-color: #f0fff4; }
+        .correct .bubble::after { border-top-color: var(--correct-color); }
+        
+        .incorrect .bubble { border-color: var(--incorrect-color); background-color: #fff5f5; }
+        .incorrect .bubble::after { border-top-color: var(--incorrect-color); }
+
+        .btn-reset {
+            margin-top: 40px;
+            padding: 12px 30px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sprechblasen-Check</h1>
+    <p class="instruction">Wer fordert offiziell Schadensersatz? Klicke auf die richtige Person.</p>
+
+    <div id="feedback-area">Lies die Sprechblasen und triff eine Wahl...</div>
+
+    <div id="chat-grid" class="chat-container">
+        <!-- Personen werden hier per JS eingefügt -->
+    </div>
+
+    <button class="btn-reset" onclick="resetGame()">Neu starten & mischen</button>
+
+    <script>
+        const speakers = [
+            {
+                id: "correct",
+                text: "Я хочу официально предъявить требования о возмещении ущерба за автомобиль.",
+                feedback: "Richtig! ПРЕДЪЯВИТЬ ТРЕБОВАНИЯ wird verwendet, um offizielle (oft juristische) Forderungen zu stellen.",
+                svg: `<svg viewBox="0 0 100 100" class="avatar"><circle cx="50" cy="35" r="25" fill="#3498db"/><path d="M20 90 Q50 60 80 90" fill="#2980b9" stroke="#2c3e50" stroke-width="2"/></svg>`
+            },
+            {
+                id: "incorrect",
+                text: "Я хочу изъявить желание помочь вам разобраться в этой сложной ситуации.",
+                feedback: "Falsch. Diese Person nutzt ИЗЪЯВИТЬ ЖЕЛАНИЕ (einen Wunsch äußern). Das ist eine freundliche Bekundung, keine Forderung.",
+                svg: `<svg viewBox="0 0 100 100" class="avatar"><circle cx="50" cy="35" r="25" fill="#e67e22"/><path d="M20 90 Q50 60 80 90" fill="#d35400" stroke="#2c3e50" stroke-width="2"/></svg>`
+            }
+        ];
+
+        let canClick = true;
+
+        function initGame() {
+            const grid = document.getElementById('chat-grid');
+            const feedback = document.getElementById('feedback-area');
+            grid.innerHTML = '';
+            feedback.textContent = "Lies die Sprechblasen und triff eine Wahl...";
+            feedback.style.borderColor = "#bdc3c7";
+            feedback.style.color = "var(--primary-color)";
+            canClick = true;
+
+            // Mischen
+            const shuffled = [...speakers].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(person => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'person-wrapper';
+                wrapper.onclick = () => checkPerson(wrapper, person);
+
+                wrapper.innerHTML = `
+                    <div class="bubble">${person.text}</div>
+                    ${person.svg}
+                `;
+                grid.appendChild(wrapper);
+            });
+        }
+
+        function checkPerson(element, data) {
+            if (!canClick) return;
+            
+            const feedback = document.getElementById('feedback-area');
+            
+            if (data.id === 'correct') {
+                element.classList.add('correct');
+                feedback.textContent = data.feedback;
+                feedback.style.borderColor = "var(--correct-color)";
+                feedback.style.color = "var(--correct-color)";
+                canClick = false;
+            } else {
+                element.classList.add('incorrect');
+                feedback.textContent = data.feedback;
+                feedback.style.borderColor = "var(--incorrect-color)";
+                feedback.style.color = "var(--incorrect-color)";
+                // Man kann weiterklicken, bis man die richtige Person findet
+            }
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        // Start
+        initGame();
+    </script>
+</body>
+</html>
