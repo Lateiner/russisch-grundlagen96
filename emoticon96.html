@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoticon-Check: Russisch Nuancen</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .emoticon-card {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            width: 0%;
+            transition: width 0.4s;
+        }
+
+        .scenario-box {
+            background-color: #f1f3f5;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border-left: 5px solid var(--secondary-color);
+            text-align: left;
+        }
+
+        .context-hint {
+            font-size: 0.9rem;
+            color: #636e72;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .russian-phrase {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            line-height: 1.4;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .emoji-btn {
+            font-size: 2.5rem;
+            padding: 15px;
+            background: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        @media (hover: hover) {
+            .emoji-btn:hover {
+                transform: scale(1.05);
+                border-color: var(--secondary-color);
+            }
+        }
+
+        .emoji-btn.correct-vibe {
+            background-color: #d5f5e3;
+            border-color: var(--correct-color);
+        }
+
+        .emoji-btn.incorrect-vibe {
+            background-color: #fadbd8;
+            border-color: var(--incorrect-color);
+            opacity: 0.5;
+        }
+
+        #feedback-area {
+            min-height: 70px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-weight: 500;
+            display: none;
+            line-height: 1.5;
+        }
+
+        .fb-success { background-color: #d5f5e3; color: #196f3d; }
+        .fb-error { background-color: #fef5e7; color: #935116; }
+
+        .btn-next {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            display: none;
+        }
+
+        @media (max-width: 450px) {
+            .emoji-grid { grid-template-columns: repeat(2, 1fr); }
+            .emoji-btn { font-size: 2.2rem; padding: 10px; }
+            .russian-phrase { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="emoticon-card">
+        <div class="progress-container"><div id="progress-fill"></div></div>
+        <div id="counter" style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">Aufgabe 1 von 8</div>
+        
+        <div class="scenario-box">
+            <div id="context-text" class="context-hint">Situation lädt...</div>
+            <div id="phrase-text" class="russian-phrase">...</div>
+        </div>
+
+        <p style="margin-bottom: 15px; font-weight: 600;">Welches Emoji passt zur Nuance des Satzes?</p>
+
+        <div class="emoji-grid" id="emoji-container"></div>
+
+        <div id="feedback-area"></div>
+
+        <button class="btn-next" id="next-btn" onclick="nextQuestion()">Nächste Aufgabe</button>
+        <button class="btn-next" id="restart-btn" style="background: var(--secondary-color)" onclick="initQuiz()">Neu starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                context: "Ein Kollege kommt nach 3 Tagen unentschuldigtem Fehlen ins Büro:",
+                phrase: "Ну, наконец-то он изъявил прийти!",
+                correct: "😉",
+                explanation: "Richtig! 😉 Das feierliche 'изъявил' wirkt hier spöttisch. Man tut so, als hätte der Kollege sich wie ein Adliger herabgelassen.",
+                options: ["👔", "🤝", "😉", "😶", "📜", "💼"]
+            },
+            {
+                context: "In den Abendnachrichten wird über einen Staatsbesuch berichtet:",
+                phrase: "Президент изъявил готовность к миру.",
+                correct: "🤝",
+                explanation: "Richtig! 🤝 In der Politik ist das Verb 'изъявить' ganz ernst gemeint. Es drückt eine formelle Absichtserklärung aus.",
+                options: ["😂", "🤡", "🤝", "😏", "🍕", "😆"]
+            },
+            {
+                context: "Dein Mitbewohner hat tagelang nichts im Haushalt getan und spült nun endlich:",
+                phrase: "Наш принц изъявиl согласие помыть посуду!",
+                correct: "👑",
+                explanation: "Korrekt! 👑 Die Kombination aus 'Prinz' und dem hohen Verb 'изъявить' macht die Situation absolut ironisch.",
+                options: ["👑", "🏢", "📈", "📄", "👮", "🛠️"]
+            },
+            {
+                context: "In einem förmlichen Geschäftsbrief schreibt eine Firma:",
+                phrase: "Компания изъявляет желание инвестировать.",
+                correct: "💼",
+                explanation: "Richtig! 💼 Das ist klassischer Geschäftsstil. Das Verb dient dazu, eine Absicht hochoffiziell zu formulieren.",
+                options: ["😜", "💼", "🤪", "🕺", "🍔", "🤫"]
+            },
+            {
+                context: "Dein Bruder hat bis Mittag geschlafen und steht nun endlich auf:",
+                phrase: "Наконец-то ты изъявил желание проснуться!",
+                correct: "😂",
+                explanation: "Richtig! 😂 Du nutzt die 'hohe Sprache' für eine banale Sache, um deinen Bruder neckisch als faul darzustellen.",
+                options: ["👔", "📜", "😂", "⚖️", "🏥", "📦"]
+            },
+            {
+                context: "In einem offiziellen Gerichtsprotokoll steht geschrieben:",
+                phrase: "Свидетель изъявил желание дать показания.",
+                correct: "📜",
+                explanation: "Richtig! 📜 Vor Gericht ist 'изъявить' der korrekte neutrale Begriff für den offiziell geäußerten Willen eines Zeugen.",
+                options: ["😏", "📜", "🤡", "🥳", "🍦", "🤔"]
+            },
+            {
+                context: "Ein Freund, der sich sonst nie meldet, schreibt plötzlich eine SMS:",
+                phrase: "О, он изъявил желание пообщаться!",
+                correct: "😏",
+                explanation: "Korrekt! 😏 Hier schwingt Sarkasmus mit. Du nutzt das förmliche Verb, um zu betonen, wie selten dieser Kontakt ist.",
+                options: ["🤝", "😏", "🎖️", "🏢", "🚒", "🛂"]
+            },
+            {
+                context: "Eine Organisation bekundet formell ihr Einverständnis:",
+                phrase: "Стороны изъявили согласие на условия.",
+                correct: "👔",
+                explanation: "Richtig! 👔 In Verträgen oder diplomatischen Texten ist 'изъявить согласие' die Standardwendung.",
+                options: ["😜", "👔", "🤪", "👻", "🍿", "🤣"]
+            }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+
+        function initQuiz() {
+            currentIndex = 0;
+            quizData.sort(() => Math.random() - 0.5);
+            document.getElementById('restart-btn').style.display = 'none';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            canClick = true;
+            const data = quizData[currentIndex];
+            
+            document.getElementById('progress-fill').style.width = ((currentIndex / quizData.length) * 100) + "%";
+            document.getElementById('counter').textContent = `Aufgabe ${currentIndex + 1} von ${quizData.length}`;
+            document.getElementById('context-text').textContent = data.context;
+            document.getElementById('phrase-text').textContent = data.phrase;
+            
+            document.getElementById('feedback-area').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+
+            const container = document.getElementById('emoji-container');
+            container.innerHTML = '';
+
+            data.options.forEach(emoji => {
+                const btn = document.createElement('button');
+                btn.className = 'emoji-btn';
+                btn.textContent = emoji;
+                btn.onclick = () => handleChoice(emoji, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleChoice(chosenEmoji, btn) {
+            if (!canClick) return;
+            
+            const data = quizData[currentIndex];
+            const feedback = document.getElementById('feedback-area');
+            feedback.style.display = 'block';
+
+            if (chosenEmoji === data.correct) {
+                btn.classList.add('correct-vibe');
+                feedback.innerHTML = data.explanation;
+                feedback.className = 'fb-success';
+                canClick = false;
+                
+                if (currentIndex < quizData.length - 1) {
+                    document.getElementById('next-btn').style.display = 'block';
+                } else {
+                    document.getElementById('progress-fill').style.width = "100%";
+                    document.getElementById('restart-btn').style.display = 'block';
+                }
+            } else {
+                btn.classList.add('incorrect-vibe');
+                feedback.innerHTML = "Das passt nicht zur Situation. Überlege: Ist der Satz ernst/offiziell oder ein Witz unter Bekannten?";
+                feedback.className = 'fb-error';
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            showQuestion();
+        }
+
+        initQuiz();
+    </script>
+</body>
+</html>
