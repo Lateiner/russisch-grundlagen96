@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kollokations-Puzzle: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 10px; }
+        .instruction { font-size: 1rem; margin-bottom: 30px; color: #7f8c8d; }
+
+        .quiz-area { margin-bottom: 20px; }
+
+        .verb-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 25px;
+            padding: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        button.option-btn {
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: #fff;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        @media (hover: hover) {
+            button.option-btn:hover {
+                background-color: #f8f9fa;
+                border-color: var(--secondary-color);
+            }
+        }
+
+        button.option-btn.correct {
+            background-color: var(--correct-color) !important;
+            border-color: var(--correct-color) !important;
+            color: white;
+        }
+
+        button.option-btn.incorrect {
+            background-color: var(--incorrect-color) !important;
+            border-color: var(--incorrect-color) !important;
+            color: white;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            height: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #eee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .final-screen { display: none; }
+        
+        button.reset-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="game-container">
+        <h1>Kollokations-Puzzle</h1>
+        <p class="instruction">Welches Substantiv passt zum Verb?</p>
+
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <div id="quiz-content">
+            <div class="verb-display" id="verb-text">ПРЕДЪЯВИТЬ + ...</div>
+            
+            <div class="options-grid" id="options-container">
+                <!-- Buttons werden hier eingefügt -->
+            </div>
+
+            <div id="feedback"></div>
+        </div>
+
+        <div id="final-screen" class="final-screen">
+            <h2>Hervorragend!</h2>
+            <p id="score-text"></p>
+            <button class="reset-btn" onclick="resetGame()">Nochmal spielen</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { verb: "ПРЕДЪЯВИТЬ", correct: "пропуск", decoys: ["радость", "погоду"] },
+            { verb: "ИЗЪЯВИТЬ", correct: "желание", decoys: ["паспорт", "стол"] },
+            { verb: "ПРЕДЪЯВИТЬ", correct: "счёт", decoys: ["согласие", "время"] },
+            { verb: "ИЗЪЯВИТЬ", correct: "готовность", decoys: ["билет", "книгу"] },
+            { verb: "ПРЕДЪЯВИТЬ", correct: "ультиматум", decoys: ["волю", "небо"] },
+            { verb: "ИЗЪЯВИТЬ", correct: "согласие", decoys: ["требование", "автомобиль"] },
+            { verb: "ПРЕДЪЯВИТЬ", correct: "иск", decoys: ["покорность", "чай"] },
+            { verb: "ИЗЪЯВИТЬ", correct: "волю", decoys: ["удостоверение", "лес"] }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let canClick = true;
+
+        function initQuiz() {
+            quizData.sort(() => Math.random() - 0.5);
+            showQuestion();
+        }
+
+        function showQuestion() {
+            canClick = true;
+            const data = quizData[currentIndex];
+            document.getElementById('verb-text').textContent = data.verb + " + ...";
+            document.getElementById('feedback').textContent = "";
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            const allOptions = [data.correct, ...data.decoys].sort(() => Math.random() - 0.5);
+
+            allOptions.forEach(optionText => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = optionText;
+                btn.onclick = () => handleSelection(btn, optionText === data.correct);
+                optionsContainer.appendChild(btn);
+            });
+
+            updateProgress();
+        }
+
+        function handleSelection(selectedBtn, isCorrect) {
+            if (!canClick) return;
+            canClick = false;
+
+            if (isCorrect) {
+                selectedBtn.classList.add('correct');
+                document.getElementById('feedback').textContent = "Richtig!";
+                document.getElementById('feedback').style.color = "var(--correct-color)";
+                score++;
+            } else {
+                selectedBtn.classList.add('incorrect');
+                document.getElementById('feedback').textContent = "Leider falsch!";
+                document.getElementById('feedback').style.color = "var(--incorrect-color)";
+                
+                // Richtige Lösung kurz hervorheben
+                Array.from(document.getElementsByClassName('option-btn')).forEach(btn => {
+                    if (btn.textContent === quizData[currentIndex].correct) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < quizData.length) {
+                    showQuestion();
+                } else {
+                    showFinalScreen();
+                }
+            }, 1500);
+        }
+
+        function updateProgress() {
+            const percent = (currentIndex / quizData.length) * 100;
+            document.getElementById('progress-fill').style.width = percent + "%";
+        }
+
+        function showFinalScreen() {
+            document.getElementById('quiz-content').style.display = 'none';
+            document.getElementById('final-screen').style.display = 'block';
+            document.getElementById('progress-fill').style.width = "100%";
+            document.getElementById('score-text').textContent = 
+                `Du hast ${score} von ${quizData.length} Kollokationen korrekt erkannt.`;
+        }
+
+        function resetGame() {
+            currentIndex = 0;
+            score = 0;
+            document.getElementById('quiz-content').style.display = 'block';
+            document.getElementById('final-screen').style.display = 'none';
+            initQuiz();
+        }
+
+        initQuiz();
+    </script>
+</body>
+</html>
