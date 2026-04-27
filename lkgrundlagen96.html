@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vokabel-Lernkartei: Russisch</title>
+    <style>
+        :root {
+            --primary-green: #2d5a27;
+            --secondary-green: #4caf50;
+            --light-green: #e8f5e9;
+            --bg-color: #f0f4f0;
+            --card-shadow: rgba(0, 0, 0, 0.15);
+            --text-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-green);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .progress {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: var(--primary-green);
+            font-size: 1.1rem;
+        }
+
+        /* Flashcard 3D Flip Layout */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 300px;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 8px 25px var(--card-shadow);
+            border-radius: 15px;
+        }
+
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            border: 4px solid var(--secondary-green);
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background-color: var(--light-green);
+        }
+
+        .content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            width: 100%;
+        }
+
+        .russian {
+            font-weight: bold;
+            color: var(--primary-green);
+            margin-bottom: 10px;
+        }
+
+        .translation {
+            color: #222;
+        }
+
+        .note {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 15px;
+            font-style: italic;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-green);
+            color: white;
+            transition: background 0.3s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            user-select: none;
+        }
+
+        button:hover {
+            background-color: var(--secondary-green);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .secondary-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-alt {
+            background-color: #607d8b;
+        }
+
+        .btn-alt:hover {
+            background-color: #455a64;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .flashcard-container { height: 250px; }
+            h1 { font-size: 1.4rem; }
+            button { padding: 10px 15px; font-size: 0.9rem; min-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Vokabeltrainer Russisch</h1>
+        
+        <div class="progress" id="progress">1 / 53</div>
+
+        <div class="flashcard-container" id="cardContainer" aria-label="Karteikarte, zum Umdrehen klicken">
+            <div class="flashcard" id="card">
+                <!-- Vorderseite -->
+                <div class="card-face card-front">
+                    <div class="content russian" id="frontText">предъявля́ть / предъяви́ть</div>
+                    <div class="note" id="frontNote"></div>
+                </div>
+                <!-- Rückseite -->
+                <div class="card-face card-back">
+                    <div class="content translation" id="backText">vorzeigen, vorweisen, geltend machen</div>
+                    <div class="note" id="backNote"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="prevBtn" title="Pfeiltaste links">← Vorherige</button>
+            <button id="nextBtn" title="Pfeiltaste rechts">Nächste →</button>
+        </div>
+
+        <div class="secondary-controls">
+            <button id="shuffleBtn" class="btn-alt">🔀 Mischen</button>
+            <button id="restartBtn" class="btn-alt" title="Pos1-Taste">🏠 Anfang</button>
+        </div>
+    </div>
+
+    <script>
+        // Die Vokabeldaten
+        const rawData = [
+            "предъявля́ть / предъяви́ть – vorzeigen, vorweisen, geltend machen",
+            "изъявля́ть / изъяви́ть – äußern, bekunden",
+            "выража́ть / вы́разить – ausdrücken, äußern",
+            "пока́зывать / показа́ть – zeigen",
+            "демонстри́ровать / продемонстри́ровать – demonstrieren, vorführen",
+            "возмеща́ть / возмести́ть – erstatten, ersetzen",
+            "подпи́сывать / подписа́ть – unterschreiben, unterzeichnen",
+            "дока́зывать / доказа́ть – beweisen",
+            "рассма́тривать / рассмотре́ть – prüfen, betrachten",
+            "уча́ствовать / поуча́ствовать – teilnehmen, sich beteiligen",
+            "просыпа́ться / просну́ться – aufwachen",
+            "приходи́ть / прийти́ – kommen, erscheinen",
+            "мыть / помы́ть – waschen, spülen",
+            "па́спорт – Reisepass, Ausweis",
+            "про́пуск – Passierschein, Werksausweis",
+            "биле́т – Ticket, Fahrkarte",
+            "докуме́нты – Dokumente",
+            "счёт – Rechnung",
+            "тре́бование – Forderung",
+            "иск – Klage, Rechtsanspruch",
+            "прете́нзия – Reklamation, Beanstandung",
+            "ультима́тум – Ultimatum",
+            "жела́ние – Wunsch",
+            "согла́сие – Zustimmung, Einverständnis",
+            "гото́вность – Bereitschaft",
+            "во́ля – Wille",
+            "ра́дость – Freude",
+            "поко́рность – Ergebenheit, Unterwürfigkeit",
+            "уще́рб – Schaden",
+            "возмеще́ние уще́рба – Schadensersatz",
+            "наконе́ц-то – endlich",
+            "официа́льно – offiziell",
+            "ирони́чно – ironisch",
+            "сотру́дник – Mitarbeiter",
+            "охра́нник – Wachmann, Sicherheitskraft",
+            "пострада́вший – Geschädigter, Opfer",
+            "свиде́тель – Zeuge",
+            "перегово́ры – Verhandlungen",
+            "посы́лка – Paket, Sendung",
+            "по́чта – Post",
+            "нача́льник – Chef, Vorgesetzter",
+            "колле́га – Kollege",
+            "сто́рона – Seite, Partei (z. B. Vertragspartei)",
+            "контра́кт – Kontrakt, Vertrag",
+            "жа́лоба – Beschwerde",
+            "прое́кт – Projekt",
+            "показа́ния – Aussagen (z. B. vor Gericht)",
+            "суд – Gericht",
+            "усло́вие – Bedingung",
+            "догово́р – Vertrag, Abkommen",
+            "Росси́я – Russland",
+            "при́нц – Prinz",
+            "посу́да – Geschirr"
+        ];
+
+        // Daten verarbeiten
+        let vocabulary = rawData.map(line => {
+            const parts = line.split(" – ");
+            // Bereinigen der Nummerierung am Anfang
+            const front = parts[0].replace(/^\d+\.\s*/, ""); 
+            const back = parts[1] || "";
+            return { front, back, frontNote: "", backNote: "" };
+        });
+
+        let currentIndex = 0;
+        let isFlipped = false;
+        let currentStack = [...vocabulary];
+
+        // DOM Elemente
+        const card = document.getElementById('card');
+        const frontText = document.getElementById('frontText');
+        const backText = document.getElementById('backText');
+        const frontNote = document.getElementById('frontNote');
+        const backNote = document.getElementById('backNote');
+        const progress = document.getElementById('progress');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Funktion zur Schriftgrößen-Anpassung
+        function adjustFontSize(element, text) {
+            const length = text.length;
+            if (length > 50) {
+                element.style.fontSize = "1.1rem";
+            } else if (length > 30) {
+                element.style.fontSize = "1.3rem";
+            } else {
+                element.style.fontSize = "1.6rem";
+            }
+        }
+
+        function updateUI() {
+            isFlipped = false;
+            card.classList.remove('is-flipped');
+            
+            const currentCard = currentStack[currentIndex];
+            
+            frontText.innerText = currentCard.front;
+            backText.innerText = currentCard.back;
+            frontNote.innerText = currentCard.frontNote;
+            backNote.innerText = currentCard.backNote;
+
+            adjustFontSize(frontText, currentCard.front);
+            adjustFontSize(backText, currentCard.back);
+
+            progress.innerText = `${currentIndex + 1} / ${currentStack.length}`;
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            card.classList.toggle('is-flipped');
+        }
+
+        function nextCard() {
+            if (currentIndex < currentStack.length - 1) {
+                currentIndex++;
+                updateUI();
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateUI();
+            }
+        }
+
+        function shuffleCards() {
+            for (let i = currentStack.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentStack[i], currentStack[j]] = [currentStack[j], currentStack[i]];
+            }
+            currentIndex = 0;
+            updateUI();
+        }
+
+        function goToStart() {
+            currentIndex = 0;
+            updateUI();
+        }
+
+        // Event Listener
+        cardContainer.addEventListener('click', flipCard);
+        nextBtn.addEventListener('click', (e) => { e.stopPropagation(); nextCard(); });
+        prevBtn.addEventListener('click', (e) => { e.stopPropagation(); prevCard(); });
+        shuffleBtn.addEventListener('click', shuffleCards);
+        restartBtn.addEventListener('click', goToStart);
+
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case " ":
+                case "Enter":
+                    e.preventDefault(); // Verhindert Scrollen bei Leertaste
+                    flipCard();
+                    break;
+                case "ArrowLeft":
+                    prevCard();
+                    break;
+                case "ArrowRight":
+                    nextCard();
+                    break;
+                case "Home":
+                    goToStart();
+                    break;
+            }
+        });
+
+        // Initialer Start
+        updateUI();
+    </script>
+</body>
+</html>
