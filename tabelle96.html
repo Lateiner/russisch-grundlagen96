@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zusammenfassungs-Quiz: 10 Beispiele</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 10px; text-align: center; }
+        .instruction { text-align: center; margin-bottom: 25px; color: #7f8c8d; font-size: 1rem; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        td {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .context-cell {
+            font-weight: bold;
+            background-color: #f8f9fa;
+            width: 50%;
+        }
+
+        .choice-cell {
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 25%;
+            font-weight: bold;
+        }
+
+        .choice-cell:hover:not(.locked) {
+            background-color: #eef7ff;
+        }
+
+        .status-icon {
+            font-size: 1.4rem;
+            margin-right: 5px;
+        }
+
+        /* Zustände */
+        .correct { background-color: #d5f5e3 !important; color: #196f3d; cursor: default; }
+        .incorrect { background-color: #fadbd8 !important; color: #943126; }
+
+        .feedback-text {
+            font-size: 0.85rem;
+            font-weight: normal;
+            display: block;
+            margin-top: 8px;
+            min-height: 1rem;
+        }
+
+        /* Responsive: Tabelle zu Karten */
+        @media (max-width: 650px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tr { margin-bottom: 25px; border: 2px solid #dee2e6; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+            td { width: 100% !important; border: none; border-bottom: 1px solid #eee; padding: 15px; }
+            .context-cell { background-color: #f1f3f5; font-size: 1.1rem; }
+            .choice-cell { padding-left: 50%; position: relative; text-align: right; }
+            .choice-cell::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                color: var(--secondary-color);
+                font-size: 0.8rem;
+                text-transform: uppercase;
+            }
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-reset {
+            padding: 15px 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        #final-score {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--correct-color);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Abschluss-Check: 10 Beispiele</h1>
+        <p class="instruction">Welches Verb passt? Klicke auf ПРЕДЪЯВЛЯТЬ (Vorzeigen/Anspruch) oder ИЗЪЯВЛЯТЬ (Wille/Gefühl).</p>
+
+        <table id="quiz-table">
+            <thead>
+                <tr>
+                    <th>Kontext / Situation</th>
+                    <th>ПРЕДЪЯВЛЯТЬ</th>
+                    <th>ИЗЪЯВЛЯТЬ</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Zeilen werden per JS eingefügt -->
+            </tbody>
+        </table>
+
+        <div class="controls">
+            <div id="final-score">Alle Aufgaben gelöst! 🏆</div>
+            <button class="btn-reset" onclick="resetGame()">Neu starten & mischen</button>
+        </div>
+    </div>
+
+    <script>
+        const tableData = [
+            {
+                context: "Удостоверение личности (паспорт) при проверке",
+                correct: "pre",
+                feedback: "Richtig! Dokumente zeigt man vor: ПРЕДЪЯВЛЯТЬ ПАСПОРТ."
+            },
+            {
+                context: "Официальная готовность к мирным переговорам",
+                correct: "iz",
+                feedback: "Korrekt! Formelle Bereitschaft bekundet man: ИЗЪЯВЛЯТЬ ГОТОВНОСТЬ."
+            },
+            {
+                context: "Счёт на оплату лечения в частной клинике",
+                correct: "pre",
+                feedback: "Richtig! Eine Rechnung wird präsentiert: ПРЕДЪЯВИТЬ СЧЁТ."
+            },
+            {
+                context: "Официальное желание участвовать в проекте",
+                correct: "iz",
+                feedback: "Korrekt! Einen Wunsch bekunden: ИЗЪЯВЛЯТЬ ЖЕЛАНИЕ."
+            },
+            {
+                context: "Требования о возмещении ущерба после аварии",
+                correct: "pre",
+                feedback: "Richtig! Rechtliche Forderungen stellt man: ПРЕДЪЯВЛЯТЬ ТРЕБОВАНИЯ."
+            },
+            {
+                context: "Формальное согласие с условиями контракта",
+                correct: "iz",
+                feedback: "Korrekt! Zustimmung offiziell bekunden: ИЗЪЯВИТЬ СОГЛАСИЕ."
+            },
+            {
+                context: "Ироничное замечание: «наконец-то он ... прийти»",
+                correct: "iz",
+                feedback: "Richtig! Hier nutzt man spöttisch ИЗЪЯВИЛ ПРИЙТИ."
+            },
+            {
+                context: "Проездной документ (билет) контролёру в поезде",
+                correct: "pre",
+                feedback: "Richtig! Fahrkarten vorzeigen: ПРЕДЪЯВИТЬ БИЛЕТ."
+            },
+            {
+                context: "Официальный ультиматуm другой стороне конфликта",
+                correct: "pre",
+                feedback: "Korrekt! Ein Ultimatum ist eine Forderung: ПРЕДЪЯВИТЬ УЛЬТИМАТУМ."
+            },
+            {
+                context: "Изъявление радости по поводу успеха (гехобен)",
+                correct: "iz",
+                feedback: "Richtig! Gefühle ausdrücken (gehoben): ИЗЪЯВЛЯТЬ РАДОСТЬ."
+            }
+        ];
+
+        let solvedRows = 0;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initQuiz() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            solvedRows = 0;
+            document.getElementById('final-score').style.display = 'none';
+
+            const shuffledData = shuffle([...tableData]);
+
+            shuffledData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${index}`;
+
+                tr.innerHTML = `
+                    <td class="context-cell">
+                        ${row.context}
+                        <span id="feedback-${index}" class="feedback-text"></span>
+                    </td>
+                    <td class="choice-cell" data-label="ПРЕДЪЯВЛЯТЬ" onclick="checkChoice(${index}, 'pre', this, '${row.correct}', '${row.feedback}')">
+                        <span id="icon-pre-${index}" class="status-icon"></span>
+                    </td>
+                    <td class="choice-cell" data-label="ИЗЪЯВЛЯТЬ" onclick="checkChoice(${index}, 'iz', this, '${row.correct}', '${row.feedback}')">
+                        <span id="icon-iz-${index}" class="status-icon"></span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function checkChoice(index, choice, element, correct, feedback) {
+            const row = document.getElementById(`row-${index}`);
+            if (row.classList.contains('locked')) return;
+
+            const feedbackSpan = document.getElementById(`feedback-${index}`);
+            const preCell = row.querySelector('[data-label="ПРЕДЪЯВЛЯТЬ"]');
+            const izCell = row.querySelector('[data-label="ИЗЪЯВЛЯТЬ"]');
+
+            // Reset der Farben in der Zeile
+            preCell.className = 'choice-cell';
+            izCell.className = 'choice-cell';
+            document.getElementById(`icon-pre-${index}`).textContent = '';
+            document.getElementById(`icon-iz-${index}`).textContent = '';
+
+            if (choice === correct) {
+                element.classList.add('correct');
+                document.getElementById(`icon-${choice}-${index}`).textContent = '✓';
+                feedbackSpan.textContent = feedback;
+                feedbackSpan.style.color = "var(--correct-color)";
+                row.classList.add('locked');
+                solvedRows++;
+                if (solvedRows === tableData.length) {
+                    document.getElementById('final-score').style.display = 'block';
+                }
+            } else {
+                element.classList.add('incorrect');
+                document.getElementById(`icon-${choice}-${index}`).textContent = '✗';
+                feedbackSpan.textContent = "Falsch. Überlege: Dokument/Forderung oder Wille/Gefühl?";
+                feedbackSpan.style.color = "var(--incorrect-color)";
+            }
+        }
+
+        function resetGame() {
+            initQuiz();
+        }
+
+        // Erster Start
+        initQuiz();
+    </script>
+</body>
+</html>
