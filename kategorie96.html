@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kategorien-Quiz: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --accent-a: #2980b9;
+            --accent-b: #8e44ad;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            width: 0%;
+            transition: width 0.4s;
+        }
+
+        .word-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 30px 0;
+            color: var(--primary-color);
+            min-height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f3f5;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .categories {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 500px) {
+            .categories { grid-template-columns: 1fr; }
+            .word-display { font-size: 2rem; }
+        }
+
+        .cat-btn {
+            padding: 20px 10px;
+            border: 3px solid #dee2e6;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cat-btn span:first-child { font-weight: bold; font-size: 1.1rem; }
+        .cat-btn span:last-child { font-size: 0.85rem; color: #7f8c8d; }
+
+        .cat-btn.btn-a:hover { border-color: var(--accent-a); background: #f0f7ff; }
+        .cat-btn.btn-b:hover { border-color: var(--accent-b); background: #f5f0ff; }
+
+        .cat-btn.correct { background-color: var(--correct-color) !important; color: white !important; border-color: var(--correct-color); }
+        .cat-btn.correct span { color: white !important; }
+        
+        .cat-btn.incorrect { background-color: var(--incorrect-color) !important; color: white !important; border-color: var(--incorrect-color); }
+        .cat-btn.incorrect span { color: white !important; }
+
+        #feedback {
+            min-height: 60px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .feedback-correct { background-color: #d5f5e3; color: #196f3d; }
+        .feedback-incorrect { background-color: #fadbd8; color: #943126; }
+
+        .btn-next {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .result-screen { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-box">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <p id="counter" style="color: #7f8c8d; font-size: 0.9rem;">Wort 1 von 10</p>
+        
+        <div class="word-display" id="word-text">паспорт</div>
+
+        <div id="feedback"></div>
+
+        <div class="categories" id="button-grid">
+            <button class="cat-btn btn-a" onclick="checkAnswer('A', this)">
+                <span>Dokument / Anspruch</span>
+                <span>(ПРЕДЪЯВЛЯТЬ)</span>
+            </button>
+            <button class="cat-btn btn-b" onclick="checkAnswer('B', this)">
+                <span>Wille / Gefühl</span>
+                <span>(ИЗЪЯВЛЯТЬ)</span>
+            </button>
+        </div>
+
+        <button class="btn-next" id="next-btn" onclick="nextWord()">Nächstes Wort</button>
+    </div>
+
+    <script>
+        const allWords = [
+            { w: "паспорт", type: "A", note: "Ein Dokument, das man zur Kontrolle vorzeigt." },
+            { w: "согласие", type: "B", note: "Eine Willensäußerung (Zustimmung bekunden)." },
+            { w: "иск", type: "A", note: "Eine rechtliche Forderung (Klage erheben)." },
+            { w: "воля", type: "B", note: "Ein innerer Wille (seinen Willen äußern)." },
+            { w: "счёт", type: "A", note: "Eine offizielle Rechnung, die präsentiert wird." },
+            { w: "желание", type: "B", note: "Ein Wunsch (gehoben: bekunden/äußern)." },
+            { w: "пропуск", type: "A", note: "Ein Ausweis, den man dem Wachmann vorzeigt." },
+            { w: "готовность", type: "B", note: "Die Bereitschaft (formell bekunden)." },
+            { w: "требования", type: "A", note: "Offizielle Forderungen, die man stellt." },
+            { w: "радость", type: "B", note: "Ein Gefühl (gehoben: Freude ausdrücken)." },
+            { w: "ультиматум", type: "A", note: "Eine offizielle letzte Forderung." },
+            { w: "билет", type: "A", note: "Eine Fahrkarte, die man vorzeigen muss." },
+            { w: "покорность", type: "B", note: "Demut/Unterwürfigkeit (ein inneres Gefühl)." }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let currentWords = [];
+        let canClick = true;
+
+        function initQuiz() {
+            // 10 zufällige Wörter auswählen
+            currentWords = [...allWords].sort(() => Math.random() - 0.5).slice(0, 10);
+            currentIndex = 0;
+            score = 0;
+            showWord();
+        }
+
+        function showWord() {
+            canClick = true;
+            const wordObj = currentWords[currentIndex];
+            document.getElementById('word-text').textContent = wordObj.w;
+            document.getElementById('counter').textContent = `Wort ${currentIndex + 1} von 10`;
+            document.getElementById('progress-fill').style.width = (currentIndex / 10 * 100) + "%";
+            
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+            
+            const buttons = document.querySelectorAll('.cat-btn');
+            buttons.forEach(btn => {
+                btn.className = btn.classList.contains('btn-a') ? 'cat-btn btn-a' : 'cat-btn btn-b';
+                btn.disabled = false;
+            });
+        }
+
+        function checkAnswer(choice, btnElement) {
+            if (!canClick) return;
+            canClick = false;
+
+            const wordObj = currentWords[currentIndex];
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.cat-btn');
+
+            buttons.forEach(btn => btn.disabled = true);
+            feedback.style.display = 'block';
+
+            if (choice === wordObj.type) {
+                btnElement.classList.add('correct');
+                feedback.innerHTML = `<strong>Richtig!</strong> ${wordObj.note}`;
+                feedback.className = 'feedback-correct';
+                score++;
+            } else {
+                btnElement.classList.add('incorrect');
+                feedback.innerHTML = `<strong>Nicht ganz.</strong> ${wordObj.note}`;
+                feedback.className = 'feedback-incorrect';
+                
+                // Richtigen Button markieren
+                buttons.forEach(btn => {
+                    if ((wordObj.type === 'A' && btn.classList.contains('btn-a')) || 
+                        (wordObj.type === 'B' && btn.classList.contains('btn-b'))) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            document.getElementById('next-btn').style.display = 'block';
+        }
+
+        function nextWord() {
+            currentIndex++;
+            if (currentIndex < 10) {
+                showWord();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const quizBox = document.getElementById('quiz-box');
+            document.getElementById('progress-fill').style.width = "100%";
+            quizBox.innerHTML = `
+                <h1 style="margin-bottom: 20px;">Ergebnis</h1>
+                <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
+                <p style="font-size: 1.2rem; margin-bottom: 30px;">Du hast <strong>${score} von 10</strong> Begriffen korrekt zugeordnet!</p>
+                <button class="btn-next" style="display:block" onclick="location.reload()">Nochmal spielen</button>
+            `;
+        }
+
+        initQuiz();
+    </script>
+</body>
+</html>
