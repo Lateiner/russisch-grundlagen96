@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ironie-Übersetzer: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            width: 0%;
+            transition: width 0.4s;
+        }
+
+        .scenario-box {
+            background-color: #f8f9fa;
+            border-left: 5px solid #9b59b6;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .context-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #7f8c8d;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .ironic-sentence {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .german-hint {
+            font-size: 1rem;
+            color: #34495e;
+            font-style: italic;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--secondary-color);
+            background-color: #f0f8ff;
+        }
+
+        .option-btn.correct {
+            background-color: var(--correct-color);
+            border-color: var(--correct-color);
+            color: white;
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--incorrect-color);
+            border-color: var(--incorrect-color);
+            color: white;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+            line-height: 1.5;
+        }
+
+        .fb-correct { background-color: #d5f5e3; color: #196f3d; }
+        .fb-incorrect { background-color: #fadbd8; color: #943126; }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        #next-btn { background: var(--secondary-color); color: white; display: none; }
+        .btn-restart { background: var(--primary-color); color: white; }
+
+        @media (max-width: 500px) {
+            .ironic-sentence { font-size: 1.1rem; }
+            .option-btn { font-size: 1rem; padding: 12px; }
+            .quiz-container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        
+        <div class="scenario-box">
+            <div class="context-label">Ironischer Satz (Umgangssprache)</div>
+            <div class="ironic-sentence" id="ironic-text">...</div>
+            <div class="german-hint" id="german-hint">...</div>
+        </div>
+
+        <p style="margin-bottom: 15px; font-weight: 600;">Was ist die neutrale, sachliche Bedeutung?</p>
+
+        <div class="options-list" id="options-container">
+            <!-- Buttons werden hier eingefügt -->
+        </div>
+
+        <div id="feedback"></div>
+
+        <div class="controls">
+            <button class="btn-action btn-restart" onclick="initQuiz()">Neu starten</button>
+            <button class="btn-action" id="next-btn" onclick="nextQuestion()">Nächste Aufgabe</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                ironic: "Наконец-то он изъявил прийти на работу!",
+                hint: "(Er hat sich bequemt zu kommen)",
+                options: [
+                    "Он наконец-то пришёл, хотя мы его долго ждали.",
+                    "Он официально попросил разрешения прийти.",
+                    "Он забыл, что сегодня нужно работать."
+                ],
+                correct: 0,
+                explanation: "Richtig! Das gehobene Verb 'изъявить' drückt hier spöttisch aus, dass er endlich erschienen ist."
+            },
+            {
+                ironic: "Наш принц изъявил согласие помыть посуду!",
+                hint: "(Unser Prinz hat sich herabgelassen abzuspülen)",
+                options: [
+                    "Он очень любит мыть посуду каждый день.",
+                    "Он наконец-то согласился помыть посуду.",
+                    "Он подписал официальный документ о мытье посуды."
+                ],
+                correct: 1,
+                explanation: "Korrekt! Die Ironie liegt darin, eine banale Tätigkeit mit einem 'hohen' Verb zu kombinieren."
+            },
+            {
+                ironic: "Наконец-то ты изъявил желание проснуться!",
+                hint: "(Endlich hast du den Willen gezeigt aufzuwachen)",
+                options: [
+                    "Ты проснулся вовремя.",
+                    "Ты очень рано встал сегодня.",
+                    "Ты наконец-то проснулся (ты долго спал)."
+                ],
+                correct: 2,
+                explanation: "Genau! Man macht sich darüber lustig, dass die Person so extrem lange geschlafen hat."
+            },
+            {
+                ironic: "Коллега изъявил волю пообщаться с нами.",
+                hint: "(Der Kollege hat das Bedürfnis bekundet mit uns zu sprechen)",
+                options: [
+                    "Коллега наконец-то решил с нами поговорить.",
+                    "Коллега очень общительный человек.",
+                    "Коллега написал нам длинное письмо."
+                ],
+                correct: 0,
+                explanation: "Richtig! Es deutet an, dass der Kollege sonst eher wortkarg oder arrogant ist."
+            },
+            {
+                ironic: "Она изъявила прийти на встречу вовремя.",
+                hint: "(Sie hat sich dazu herabgelassen pünktlich zu sein)",
+                options: [
+                    "Она всегда приходит вовремя.",
+                    "Она наконец-то не опоздала.",
+                    "Она вообще не пришла на встречу."
+                ],
+                correct: 1,
+                explanation: "Richtig! Das Verb betont sarkastisch die seltene Pünktlichkeit der Person."
+            },
+            {
+                ironic: "Наш кот изъявил желание поесть.",
+                hint: "(Unser Kater hat den Wunsch bekundet zu speisen)",
+                options: [
+                    "Кот просто хочет есть.",
+                    "Кот заболел и не хочет есть.",
+                    "Кatze hat eine offizielle Forderung gestellt."
+                ],
+                correct: 0,
+                explanation: "Korrekt! Wenn man Tiere mit 'изъявлять' beschreibt, wirkt das immer humorvoll-ironisch."
+            }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+
+        function initQuiz() {
+            currentIndex = 0;
+            quizData.sort(() => Math.random() - 0.5);
+            showQuestion();
+        }
+
+        function showQuestion() {
+            canClick = true;
+            const data = quizData[currentIndex];
+            
+            document.getElementById('progress-fill').style.width = ((currentIndex / quizData.length) * 100) + "%";
+            document.getElementById('ironic-text').textContent = data.ironic;
+            document.getElementById('german-hint').textContent = data.hint;
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => handleChoice(index, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleChoice(index, btn) {
+            if (!canClick) return;
+            canClick = false;
+
+            const data = quizData[currentIndex];
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.option-btn');
+
+            feedback.style.display = 'block';
+
+            if (index === data.correct) {
+                btn.classList.add('correct');
+                feedback.textContent = "Richtig! " + data.explanation;
+                feedback.className = 'fb-correct';
+            } else {
+                btn.classList.add('incorrect');
+                feedback.textContent = "Nicht ganz. Überlege, was sachlich passiert ist.";
+                feedback.className = 'fb-incorrect';
+                buttons[data.correct].classList.add('correct');
+            }
+
+            if (currentIndex < quizData.length - 1) {
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                document.getElementById('progress-fill').style.width = "100%";
+                feedback.textContent += " – Du hast alle Aufgaben abgeschlossen!";
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            showQuestion();
+        }
+
+        initQuiz();
+    </script>
+</body>
+</html>
