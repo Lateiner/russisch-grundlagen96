@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korrektur-Modus: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 10px; }
+        .instruction { color: #7f8c8d; margin-bottom: 30px; font-size: 1rem; }
+
+        /* Satz-Display */
+        .sentence-display {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #eee;
+        }
+
+        .word-btn {
+            padding: 10px 15px;
+            font-size: 1.2rem;
+            background: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .word-btn:hover { border-color: var(--secondary-color); background: #f0f8ff; }
+        .word-btn.selected-error { background: var(--incorrect-color); color: white; border-color: var(--incorrect-color); }
+        .word-btn.fixed { background: var(--correct-color); color: white; border-color: var(--correct-color); cursor: default; }
+
+        /* Korrektur-Optionen */
+        .correction-area {
+            display: none; /* Erst nach Klick auf Fehler zeigen */
+            margin-top: 20px;
+            padding: 20px;
+            background: #eef7ff;
+            border-radius: 12px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .options-grid {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .opt-btn {
+            padding: 12px 20px;
+            background: white;
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--secondary-color);
+            transition: all 0.2s;
+        }
+
+        .opt-btn:hover { background: var(--secondary-color); color: white; }
+
+        #feedback {
+            margin-top: 20px;
+            min-height: 50px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .btn-next {
+            margin-top: 25px;
+            padding: 12px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .word-btn { font-size: 1rem; padding: 8px 12px; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Korrektur-Modus</h1>
+        <p class="instruction">Finde das falsche Wort im Satz, klicke es an und korrigiere es.</p>
+
+        <div id="sentence-container" class="sentence-display">
+            <!-- Wörter werden hier geladen -->
+        </div>
+
+        <div id="correction-area" class="correction-area">
+            <p>Wähle die richtige Korrektur:</p>
+            <div id="options-grid" class="options-grid"></div>
+        </div>
+
+        <div id="feedback"></div>
+
+        <button id="next-btn" class="btn-next" onclick="nextQuestion()">Nächster Satz</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                sentence: ["Он", "предъявил", "желание", "помочь."],
+                errorIndex: 1,
+                options: ["изъявил", "предъявили"],
+                correct: "изъявил",
+                explanation: "Richtig! Gefühle und Wünsche (желание) werden <b>изъявлены</b>, nicht предъявлены."
+            },
+            {
+                sentence: ["Вам", "изъявляют", "счёт", "за", "лечение."],
+                errorIndex: 1,
+                options: ["предъявляют", "изъявляли"],
+                correct: "предъявляют",
+                explanation: "Korrekt! Eine Rechnung (счёт) ist eine offizielle Forderung, daher nutzt man <b>предъявлять</b>."
+            },
+            {
+                sentence: ["Нужно", "изъявить", "паспорт", "охраннику."],
+                errorIndex: 1,
+                options: ["предъявить", "предъявила"],
+                correct: "предъявить",
+                explanation: "Richtig! Dokumente wie der Pass werden zur Kontrolle <b>предъявлены</b>."
+            },
+            {
+                sentence: ["Директор", "предъявил", "готовность", "к", "переговорам."],
+                errorIndex: 1,
+                options: ["изъявил", "изъявили"],
+                correct: "изъявил",
+                explanation: "Genau! Bereitschaft (готовность) bekunden ist eine Willensäußerung: <b>изъявить</b>."
+            },
+            {
+                sentence: ["Наконец-то", "он", "предъявил", "прийти", "на", "работу!"],
+                errorIndex: 2,
+                options: ["изъявил", "изъявили"],
+                correct: "изъявил",
+                explanation: "Richtig! In diesem ironischen Kontext nutzt man <b>изъявить</b>, als würde er sich herablassen."
+            },
+            {
+                sentence: ["Пострадавший", "хочет", "изъявить", "требования."],
+                errorIndex: 2,
+                options: ["предъявить", "изъявили"],
+                correct: "предъявить",
+                explanation: "Richtig! Rechtliche Forderungen (требования) werden offiziell <b>предъявлены</b>."
+            }
+        ];
+
+        let currentIndex = 0;
+        let errorFound = false;
+
+        function initQuiz() {
+            currentIndex = 0;
+            quizData.sort(() => Math.random() - 0.5);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            errorFound = false;
+            const data = quizData[currentIndex];
+            const container = document.getElementById('sentence-container');
+            const correctionArea = document.getElementById('correction-area');
+            const feedback = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+
+            container.innerHTML = '';
+            correctionArea.style.display = 'none';
+            feedback.textContent = '';
+            feedback.style.color = 'inherit';
+            nextBtn.style.display = 'none';
+
+            data.sentence.forEach((word, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'word-btn';
+                btn.textContent = word;
+                btn.onclick = () => handleWordClick(btn, index);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleWordClick(btn, index) {
+            if (errorFound) return;
+
+            const data = quizData[currentIndex];
+            const feedback = document.getElementById('feedback');
+
+            if (index === data.errorIndex) {
+                errorFound = true;
+                btn.classList.add('selected-error');
+                showCorrections();
+                feedback.textContent = "Fehler gefunden! Wie heißt das richtige Verb?";
+                feedback.style.color = "var(--secondary-color)";
+            } else {
+                feedback.textContent = "Dieses Wort ist korrekt. Such weiter!";
+                feedback.style.color = "var(--incorrect-color)";
+                btn.style.borderColor = "var(--incorrect-color)";
+                setTimeout(() => btn.style.borderColor = "#bdc3c7", 500);
+            }
+        }
+
+        function showCorrections() {
+            const data = quizData[currentIndex];
+            const area = document.getElementById('correction-area');
+            const grid = document.getElementById('options-grid');
+            
+            area.style.display = 'block';
+            grid.innerHTML = '';
+
+            data.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn';
+                btn.textContent = opt;
+                btn.onclick = () => handleCorrection(opt);
+                grid.appendChild(btn);
+            });
+        }
+
+        function handleCorrection(choice) {
+            const data = quizData[currentIndex];
+            const feedback = document.getElementById('feedback');
+            const errorBtn = document.querySelector('.selected-error');
+
+            if (choice === data.correct) {
+                errorBtn.textContent = choice;
+                errorBtn.className = 'word-btn fixed';
+                document.getElementById('correction-area').style.display = 'none';
+                feedback.innerHTML = "Richtig korrigiert! " + data.explanation;
+                feedback.style.color = "var(--correct-color)";
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                feedback.textContent = "Nicht ganz. Diese Form passt hier nicht.";
+                feedback.style.color = "var(--incorrect-color)";
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showFinal();
+            }
+        }
+
+        function showFinal() {
+            document.querySelector('.container').innerHTML = `
+                <h1>Ausgezeichnet!</h1>
+                <p>Du hast alle Sätze erfolgreich korrigiert und den Unterschied verstanden.</p>
+                <div style="font-size: 3rem; margin: 20px;">🎉</div>
+                <button class="opt-btn" onclick="location.reload()">Nochmal spielen</button>
+            `;
+        }
+
+        initQuiz();
+    </script>
+</body>
+</html>
