@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direkt-Feedback: Nachrichten-Lückentext</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 10px; text-align: center; }
+        .instruction { text-align: center; margin-bottom: 25px; color: #7f8c8d; font-size: 0.95rem; }
+
+        #feedback-header {
+            text-align: center;
+            font-weight: bold;
+            height: 30px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .sentence-card {
+            background: #f9f9f9;
+            border-left: 5px solid var(--secondary-color);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 0 10px 10px 0;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        /* Lücken-Styling */
+        .gap {
+            display: inline-block;
+            min-width: 130px;
+            border-bottom: 2px solid var(--secondary-color);
+            text-align: center;
+            cursor: pointer;
+            padding: 0 10px;
+            font-weight: bold;
+            color: var(--secondary-color);
+            background: #eef7ff;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.2s;
+        }
+
+        .gap.active { 
+            background: #d0e7ff; 
+            border-bottom-width: 4px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .gap.correct { 
+            color: white; 
+            border-bottom-color: var(--correct-color); 
+            background: var(--correct-color); 
+            cursor: default;
+        }
+
+        .gap.incorrect { 
+            color: white; 
+            border-bottom-color: var(--incorrect-color); 
+            background: var(--incorrect-color); 
+        }
+
+        /* Wort-Bank */
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #eee;
+            border-radius: 10px;
+            position: sticky;
+            bottom: 20px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+        }
+
+        .word-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-reset {
+            margin-top: 20px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            background-color: var(--primary-color);
+        }
+
+        @media (max-width: 600px) {
+            .sentence-card { font-size: 1rem; padding: 15px; }
+            .gap { min-width: 110px; }
+            .word-btn { padding: 8px 15px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Nachrichten-Lückentext</h1>
+        <p class="instruction">Klicke eine Lücke an und wähle dann das passende Wort. Rückmeldung erfolgt sofort!</p>
+
+        <div id="feedback-header"></div>
+
+        <div id="exercise-container"></div>
+
+        <div class="word-bank" id="word-bank"></div>
+
+        <div style="text-align: center;">
+            <button class="btn-reset" onclick="resetExercise()">Neu starten</button>
+        </div>
+    </div>
+
+    <script>
+        const newsData = [
+            { id: 0, start: "Президент страны ", gap: "изъявил", end: " готовность к мирным переговорам.", hint: "Wille/Bereitschaft" },
+            { id: 1, start: "Полиция попросила водителя ", gap: "предъявить", end: " документы на машину.", hint: "Dokumente vorzeigen" },
+            { id: 2, start: "Пострадавший решил ", gap: "предъявить", end: " иск о возмещении ущерба.", hint: "Forderung stellen" },
+            { id: 3, start: "Крупные компании уже ", gap: "изъявили", end: " желание участвовать в проекте.", hint: "Wunsch bekunden" },
+            { id: 4, start: "Для входа в здание нужно ", gap: "предъявить", end: " специальный пропуск.", hint: "Ausweis vorzeigen" },
+            { id: 5, start: "Стороны официально ", gap: "изъявили", end: " согласие на условия договора.", hint: "Zustimmung bekunden" }
+        ];
+
+        let selectedGapId = null;
+        let solvedCount = 0;
+
+        function initExercise() {
+            const container = document.getElementById('exercise-container');
+            const bank = document.getElementById('word-bank');
+            const header = document.getElementById('feedback-header');
+            
+            container.innerHTML = '';
+            bank.innerHTML = '';
+            header.textContent = '';
+            header.style.color = 'inherit';
+            selectedGapId = null;
+            solvedCount = 0;
+
+            newsData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'sentence-card';
+                div.innerHTML = `
+                    ${index + 1}. ${item.start} 
+                    <span class="gap" id="gap-${index}" onclick="selectGap(${index})">____</span> 
+                    ${item.end}
+                `;
+                container.appendChild(div);
+            });
+
+            const words = ["изъявил", "предъявить", "предъявить", "изъявили", "предъявить", "изъявили"];
+            const shuffledWords = words.sort(() => Math.random() - 0.5);
+
+            shuffledWords.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = 'word-btn';
+                btn.textContent = word;
+                btn.onclick = () => fillWord(word);
+                bank.appendChild(btn);
+            });
+        }
+
+        function selectGap(id) {
+            const gap = document.getElementById(`gap-${id}`);
+            if (gap.classList.contains('correct')) return;
+
+            document.querySelectorAll('.gap').forEach(g => g.classList.remove('active'));
+            selectedGapId = id;
+            gap.classList.add('active');
+            updateHeader("Wähle jetzt ein Wort aus der Liste unten.", "var(--secondary-color)");
+        }
+
+        function fillWord(word) {
+            if (selectedGapId === null) {
+                updateHeader("Klicke zuerst auf eine Lücke im Text!", "var(--incorrect-color)");
+                return;
+            }
+
+            const gap = document.getElementById(`gap-${selectedGapId}`);
+            const expected = newsData[selectedGapId].gap;
+
+            gap.textContent = word;
+            gap.classList.remove('active');
+
+            if (word === expected) {
+                gap.className = 'gap correct';
+                updateHeader("Richtig!", "var(--correct-color)");
+                selectedGapId = null;
+                solvedCount++;
+                checkTotalWin();
+            } else {
+                gap.className = 'gap incorrect';
+                updateHeader("Leider falsch, versuche es noch einmal!", "var(--incorrect-color)");
+                // Nach kurzer Zeit Lücke wieder leeren für neuen Versuch
+                setTimeout(() => {
+                    if (gap.className.includes('incorrect')) {
+                        gap.className = 'gap active';
+                        gap.textContent = "____";
+                    }
+                }, 1000);
+            }
+        }
+
+        function updateHeader(text, color) {
+            const header = document.getElementById('feedback-header');
+            header.textContent = text;
+            header.style.color = color;
+        }
+
+        function checkTotalWin() {
+            if (solvedCount === newsData.length) {
+                updateHeader("Ausgezeichnet! Alle Sätze sind korrekt.", "var(--correct-color)");
+            }
+        }
+
+        function resetExercise() {
+            initExercise();
+        }
+
+        initExercise();
+    </script>
+</body>
+</html>
